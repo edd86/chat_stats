@@ -17,9 +17,9 @@ class ChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormatted = DateFormat('dd/MM/yyyy HH:mm').format(
-      DateTime.fromMillisecondsSinceEpoch(chat.createdAt),
-    );
+    final dateFormatted = DateFormat(
+      'dd/MM/yyyy HH:mm',
+    ).format(DateTime.fromMillisecondsSinceEpoch(chat.createdAt));
 
     return Card(
       color: AppColors.surfaceContainer,
@@ -53,7 +53,8 @@ class ChatCard extends StatelessWidget {
                       children: [
                         Text(
                           chat.name,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -63,15 +64,17 @@ class ChatCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Importado el $dateFormatted',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                              ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: AppColors.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.error,
+                    ),
                     onPressed: onDelete,
                     tooltip: 'Eliminar de SQLite',
                   ),
@@ -125,9 +128,9 @@ class _MetricBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.onSurface,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: AppColors.onSurface),
         ),
       ],
     );
