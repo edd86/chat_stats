@@ -35,8 +35,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -90,11 +91,29 @@ class DatabaseHelper {
     ''');
 
     // 4. Create SQLite Performance Indices
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(chat_id, timestamp);');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(chat_id, sender);');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_messages_system_media ON messages(chat_id, is_system, is_media);');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_participants_chat ON participants(chat_id);');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(chat_id, timestamp);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(chat_id, sender);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_messages_system_media ON messages(chat_id, is_system, is_media);',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_participants_chat ON participants(chat_id);',
+    );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE messages ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
 
   // --- Database Operations ---
@@ -156,30 +175,37 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getDailyActivity(int chatId) async {
     final db = await instance.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT date_str, COUNT(*) as count 
       FROM messages 
       WHERE chat_id = ? AND is_system = 0
       GROUP BY date_str 
       ORDER BY timestamp ASC
-    ''', [chatId]);
+    ''',
+      [chatId],
+    );
   }
 
   Future<List<Map<String, dynamic>>> getHourlyDistribution(int chatId) async {
     final db = await instance.database;
     // Extract hour from time_str (HH:mm format)
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT SUBSTR(time_str, 1, 2) as hour, COUNT(*) as count
       FROM messages
       WHERE chat_id = ? AND is_system = 0
       GROUP BY hour
       ORDER BY hour ASC
-    ''', [chatId]);
+    ''',
+      [chatId],
+    );
   }
 
   Future<List<Map<String, dynamic>>> getActivityHeatmap(int chatId) async {
     final db = await instance.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT 
         CAST(strftime('%w', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as day_of_week,
         CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour,
@@ -187,10 +213,15 @@ class DatabaseHelper {
       FROM messages
       WHERE chat_id = ? AND is_system = 0
       GROUP BY day_of_week, hour
-    ''', [chatId]);
+    ''',
+      [chatId],
+    );
   }
 
-  Future<List<ChatMessageModel>> searchMessages(int chatId, String query) async {
+  Future<List<ChatMessageModel>> searchMessages(
+    int chatId,
+    String query,
+  ) async {
     final db = await instance.database;
     final result = await db.query(
       'messages',
@@ -204,12 +235,59 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getConversationStream(int chatId) async {
     final db = await instance.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT timestamp, sender, content
       FROM messages
       WHERE chat_id = ? AND is_system = 0
       ORDER BY timestamp ASC
-    ''', [chatId]);
+    ''',
+      [chatId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getMessagesForAnalysis(int chatId) async {
+    final db = await instance.database;
+    return await db.rawQuery(
+      '''
+      SELECT sender, content, char_count, is_media, is_edited, is_deleted
+      FROM messages
+      WHERE chat_id = ? AND is_system = 0
+      ORDER BY timestamp ASC
+    ''',
+      [chatId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getEditedStats(int chatId) async {
+    final db = await instance.database;
+    return await db.rawQuery(
+      '''
+      SELECT sender, COUNT(*) as count
+      FROM messages
+      WHERE chat_id = ? AND is_system = 0 AND is_edited = 1
+      GROUP BY sender
+      ORDER BY count DESC
+    ''',
+      [chatId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getContentStats(int chatId) async {
+    final db = await instance.database;
+    return await db.rawQuery(
+      '''
+      SELECT sender,
+        SUM(CASE WHEN is_media = 1 THEN 1 ELSE 0 END) as media_count,
+        SUM(CASE WHEN is_media = 0 THEN 1 ELSE 0 END) as text_count,
+        COUNT(*) as total
+      FROM messages
+      WHERE chat_id = ? AND is_system = 0
+      GROUP BY sender
+      ORDER BY total DESC
+    ''',
+      [chatId],
+    );
   }
 
   Future<int> deleteChat(int chatId) async {
