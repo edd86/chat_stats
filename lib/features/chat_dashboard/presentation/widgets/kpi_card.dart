@@ -43,10 +43,10 @@ class KpiCard extends StatelessWidget {
               Text(
                 title.toUpperCase(),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                    ),
+                  color: AppColors.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -62,18 +62,18 @@ class KpiCard extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.onSurface,
-                ),
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: AppColors.onSurface,
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
             Text(
               subtitle!,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ],
         ],

@@ -15,7 +15,9 @@ class ActivityChart extends ConsumerWidget {
 
     final displayData = switch (timeframe) {
       ActivityChartTimeframe.last30Days =>
-        dailyData.length > 30 ? dailyData.sublist(dailyData.length - 30) : dailyData,
+        dailyData.length > 30
+            ? dailyData.sublist(dailyData.length - 30)
+            : dailyData,
       ActivityChartTimeframe.all => dailyData,
     };
 
@@ -106,7 +108,9 @@ class ActivityChart extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 24,
-                      interval: (displayData.length / 4).clamp(1, 100).toDouble(),
+                      interval: (displayData.length / 4)
+                          .clamp(1, 100)
+                          .toDouble(),
                       getTitlesWidget: (value, meta) {
                         int index = value.toInt();
                         if (index >= 0 && index < displayData.length) {
@@ -174,10 +178,10 @@ class ActivityChart extends ConsumerWidget {
             Text(
               'ACTIVIDAD DIARIA',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
-                  ),
+                color: AppColors.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
             ),
           ],
         ),
@@ -237,7 +241,9 @@ class _FilterOption extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? AppColors.background : AppColors.onSurfaceVariant,
+            color: isSelected
+                ? AppColors.background
+                : AppColors.onSurfaceVariant,
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           ),
