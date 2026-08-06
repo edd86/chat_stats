@@ -9,6 +9,7 @@ class ChatMessageModel {
   final bool isSystem;
   final bool isMedia;
   final bool isEdited;
+  final bool isDeleted;
   final int wordCount;
   final int charCount;
 
@@ -23,6 +24,7 @@ class ChatMessageModel {
     required this.isSystem,
     required this.isMedia,
     required this.isEdited,
+    required this.isDeleted,
     required this.wordCount,
     required this.charCount,
   });
@@ -39,6 +41,7 @@ class ChatMessageModel {
       'is_system': isSystem ? 1 : 0,
       'is_media': isMedia ? 1 : 0,
       'is_edited': isEdited ? 1 : 0,
+      'is_deleted': isDeleted ? 1 : 0,
       'word_count': wordCount,
       'char_count': charCount,
     };
@@ -56,6 +59,7 @@ class ChatMessageModel {
       isSystem: (map['is_system'] as int) == 1,
       isMedia: (map['is_media'] as int) == 1,
       isEdited: (map['is_edited'] as int) == 1,
+      isDeleted: (map['is_deleted'] as int?) == 1,
       wordCount: map['word_count'] as int,
       charCount: map['char_count'] as int,
     );

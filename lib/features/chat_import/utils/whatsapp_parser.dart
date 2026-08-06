@@ -29,9 +29,14 @@ class WhatsAppParser {
   /// Extract chat title from file name
   /// e.g., "Chat de WhatsApp con En este grupo no se Admiten Ronalds 😅.txt" -> "En este grupo no se Admiten Ronalds 😅"
   static String extractChatTitle(String rawFileName) {
-    String cleanName = rawFileName.replaceAll(RegExp(r'\.txt$', caseSensitive: false), '').trim();
-    
-    final prefixMatch = RegExp(r'^(?:Chat de WhatsApp con|WhatsApp Chat with|Chat de WhatsApp|WhatsApp Chat)\s+(.+)$', caseSensitive: false).firstMatch(cleanName);
+    String cleanName = rawFileName
+        .replaceAll(RegExp(r'\.txt$', caseSensitive: false), '')
+        .trim();
+
+    final prefixMatch = RegExp(
+      r'^(?:Chat de WhatsApp con|WhatsApp Chat with|Chat de WhatsApp|WhatsApp Chat)\s+(.+)$',
+      caseSensitive: false,
+    ).firstMatch(cleanName);
     if (prefixMatch != null && prefixMatch.group(1) != null) {
       return prefixMatch.group(1)!.trim();
     }
@@ -117,31 +122,37 @@ class WhatsAppParser {
         }
       }
 
-      messages.add(ChatMessageModel(
-        chatId: 0, // Assigned upon DB insert
-        timestamp: timestamp,
-        dateStr: raw.dateStr,
-        timeStr: raw.timeStr,
-        sender: parsedBody.sender,
-        content: parsedBody.content,
-        isSystem: parsedBody.isSystem,
-        isMedia: parsedBody.isMedia,
-        isEdited: parsedBody.isEdited,
-        wordCount: wordCount,
-        charCount: parsedBody.content.length,
-      ));
+      messages.add(
+        ChatMessageModel(
+          chatId: 0, // Assigned upon DB insert
+          timestamp: timestamp,
+          dateStr: raw.dateStr,
+          timeStr: raw.timeStr,
+          sender: parsedBody.sender,
+          content: parsedBody.content,
+          isSystem: parsedBody.isSystem,
+          isMedia: parsedBody.isMedia,
+          isEdited: parsedBody.isEdited,
+          isDeleted: parsedBody.isDeleted,
+          wordCount: wordCount,
+          charCount: parsedBody.content.length,
+        ),
+      );
     }
 
-    final List<ParticipantModel> participants = participantMap.values
-        .map((p) => ParticipantModel(
-              chatId: 0,
-              name: p.name,
-              messageCount: p.messageCount,
-              mediaCount: p.mediaCount,
-              wordCount: p.wordCount,
-            ))
-        .toList()
-      ..sort((a, b) => b.messageCount.compareTo(a.messageCount));
+    final List<ParticipantModel> participants =
+        participantMap.values
+            .map(
+              (p) => ParticipantModel(
+                chatId: 0,
+                name: p.name,
+                messageCount: p.messageCount,
+                mediaCount: p.mediaCount,
+                wordCount: p.wordCount,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.messageCount.compareTo(a.messageCount));
 
     final chat = ChatModel(
       name: chatTitle,
@@ -171,6 +182,7 @@ class WhatsAppParser {
 
       final isMedia = _checkIsMedia(content);
       final isEdited = _checkIsEdited(content);
+      final isDeleted = _checkIsDeleted(content);
 
       return _ParsedBody(
         sender: sender,
@@ -178,6 +190,7 @@ class WhatsAppParser {
         isSystem: false,
         isMedia: isMedia,
         isEdited: isEdited,
+        isDeleted: isDeleted,
       );
     } else {
       // System message
@@ -187,6 +200,7 @@ class WhatsAppParser {
         isSystem: true,
         isMedia: false,
         isEdited: false,
+        isDeleted: false,
       );
     }
   }
@@ -205,6 +219,14 @@ class WhatsAppParser {
     final lower = text.toLowerCase();
     return lower.contains('<se editó este mensaje.>') ||
         lower.contains('<this message was edited>');
+  }
+
+  static bool _checkIsDeleted(String text) {
+    final lower = text.toLowerCase();
+    return lower.contains('se eliminó este mensaje.') ||
+        lower.contains('<este mensaje fue eliminado>') ||
+        lower.contains('<se borró este mensaje>') ||
+        lower.contains('<this message was deleted>');
   }
 
   static int _calculateWordCount(String text) {
@@ -268,6 +290,7 @@ class _ParsedBody {
   final bool isSystem;
   final bool isMedia;
   final bool isEdited;
+  final bool isDeleted;
 
   _ParsedBody({
     required this.sender,
@@ -275,6 +298,7 @@ class _ParsedBody {
     required this.isSystem,
     required this.isMedia,
     required this.isEdited,
+    required this.isDeleted,
   });
 }
 
