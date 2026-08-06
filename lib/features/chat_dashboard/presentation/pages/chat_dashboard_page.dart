@@ -9,6 +9,7 @@ import '../widgets/kpi_card.dart';
 import '../widgets/participants_chart.dart';
 import '../widgets/activity_heatmap.dart';
 import '../widgets/conversation_dynamics.dart';
+import '../widgets/message_analysis_section.dart';
 
 class ChatDashboardPage extends ConsumerWidget {
   final int chatId;
@@ -23,6 +24,7 @@ class ChatDashboardPage extends ConsumerWidget {
     final hourlyAsync = ref.watch(chatHourlyDistributionProvider(chatId));
     final heatmapAsync = ref.watch(chatHeatmapProvider(chatId));
     final dynamicsAsync = ref.watch(chatDynamicsProvider(chatId));
+    final analysisAsync = ref.watch(chatAnalysisProvider(chatId));
 
     return Scaffold(
       appBar: AppBar(
@@ -306,6 +308,15 @@ class ChatDashboardPage extends ConsumerWidget {
                       const Center(child: CircularProgressIndicator()),
                   error: (err, _) =>
                       Text('Error al cargar participantes: $err'),
+                ),
+
+                // Message Content Analysis
+                const SizedBox(height: 28),
+                analysisAsync.when(
+                  data: (analysis) =>
+                      MessageAnalysisSection(analysis: analysis),
+                  loading: () => const SizedBox(),
+                  error: (_, _) => const SizedBox(),
                 ),
               ],
             ),

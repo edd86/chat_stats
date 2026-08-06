@@ -4,6 +4,7 @@ import '../../../chat_import/domain/models/chat_model.dart';
 import '../../../chat_import/domain/models/chat_message_model.dart';
 import '../../../chat_import/domain/models/participant_model.dart';
 import '../../domain/models/conversation_dynamics.dart';
+import '../../domain/models/message_analysis.dart';
 
 final chatDetailProvider = FutureProvider.family.autoDispose<ChatModel?, int>((
   ref,
@@ -48,6 +49,14 @@ final chatDynamicsProvider = FutureProvider.family
     .autoDispose<ConversationDynamics, int>((ref, chatId) async {
       final stream = await DatabaseHelper.instance.getConversationStream(chatId);
       return ConversationDynamics.process(stream);
+    });
+
+final chatAnalysisProvider = FutureProvider.family
+    .autoDispose<MessageAnalysis, int>((ref, chatId) async {
+      final messages = await DatabaseHelper.instance.getMessagesForAnalysis(chatId);
+      final edited = await DatabaseHelper.instance.getEditedStats(chatId);
+      final content = await DatabaseHelper.instance.getContentStats(chatId);
+      return MessageAnalysis.process(messages, edited, content);
     });
 
 enum ActivityChartTimeframe { all, last30Days }
