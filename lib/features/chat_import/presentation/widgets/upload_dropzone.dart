@@ -59,7 +59,7 @@ class UploadDropzone extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Seleccionar archivo .txt de WhatsApp',
+                'Seleccionar archivo .zip o .txt de WhatsApp',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -68,7 +68,7 @@ class UploadDropzone extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Ejemplo: "Chat de WhatsApp con Amigos.txt"',
+                'Ejemplo: "Chat de WhatsApp con Amigos.zip" o ".txt"',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 13,

@@ -1,16 +1,68 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/chat_import_provider.dart';
 import '../widgets/chat_card.dart';
 import '../widgets/upload_dropzone.dart';
 
-class ChatHistoryPage extends ConsumerWidget {
+class ChatHistoryPage extends ConsumerStatefulWidget {
   const ChatHistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatHistoryPage> createState() => _ChatHistoryPageState();
+}
+
+class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
+  late StreamSubscription _intentDataStreamSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initShareIntent();
+  }
+
+  void _initShareIntent() {
+    // Listen to media sharing stream while app is in memory / background
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen(
+          (List<SharedMediaFile> value) {
+            _processSharedFiles(value);
+          },
+          onError: (err) {
+            debugPrint("Error al recibir intent de compartir: $err");
+          },
+        );
+
+    // Get media sharing when app is opened via share intent (cold start)
+    ReceiveSharingIntent.instance.getInitialMedia().then((
+      List<SharedMediaFile> value,
+    ) {
+      _processSharedFiles(value);
+      ReceiveSharingIntent.instance.reset();
+    });
+  }
+
+  void _processSharedFiles(List<SharedMediaFile> value) {
+    if (value.isNotEmpty) {
+      final path = value.first.path;
+      if (path.isNotEmpty) {
+        ref.read(chatImportProvider.notifier).importFromPath(path);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _intentDataStreamSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final importState = ref.watch(chatImportProvider);
     final chatsAsync = ref.watch(chatListProvider);
 
@@ -80,7 +132,7 @@ class ChatHistoryPage extends ConsumerWidget {
                 padding: const EdgeInsets.all(32),
                 alignment: Alignment.center,
                 child: Text(
-                  'Aún no has guardado ninguna sala de chat.\nImporta un archivo .txt arriba para comenzar.',
+                  'Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),

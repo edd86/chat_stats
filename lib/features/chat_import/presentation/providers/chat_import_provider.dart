@@ -1,9 +1,10 @@
-import 'dart:convert';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/local/database_helper.dart';
 import '../../domain/models/chat_model.dart';
 import '../../utils/whatsapp_parser.dart';
+import '../../utils/zip_extractor.dart';
 
 enum ImportStatus { idle, loading, success, error }
 
@@ -43,7 +44,7 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
 
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['txt'],
+        allowedExtensions: ['txt', 'zip'],
       );
 
       if (result == null || result.files.isEmpty) {
@@ -54,37 +55,65 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
       final file = result.files.first;
       final bytes = await file.readAsBytes();
 
-      final String fileContent = utf8.decode(bytes, allowMalformed: true);
-      final parsed = await WhatsAppParser.parseChatContent(
-        rawFileName: file.name,
-        fileContent: fileContent,
-      );
-
-      if (parsed.messages.isEmpty) {
-        state = state.copyWith(
-          status: ImportStatus.error,
-          errorMessage:
-              'No se encontraron mensajes válidos de WhatsApp en el archivo.',
-        );
-        return;
-      }
-
-      final chatId = await DatabaseHelper.instance.insertFullChat(
-        chat: parsed.chat,
-        messages: parsed.messages,
-        participants: parsed.participants,
-      );
-
-      state = state.copyWith(
-        status: ImportStatus.success,
-        importedChatId: chatId,
-      );
+      await _processBytes(bytes: bytes, rawFileName: file.name);
     } catch (e) {
       state = state.copyWith(
         status: ImportStatus.error,
         errorMessage: 'Error al importar archivo: ${e.toString()}',
       );
     }
+  }
+
+  Future<void> importFromPath(String filePath) async {
+    try {
+      state = state.copyWith(status: ImportStatus.loading, errorMessage: null);
+
+      final extracted = await ZipExtractor.extractFromFilePath(filePath);
+      await _processExtracted(extracted);
+    } catch (e) {
+      state = state.copyWith(
+        status: ImportStatus.error,
+        errorMessage: 'Error al procesar archivo compartido: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<void> _processBytes({
+    required Uint8List bytes,
+    required String rawFileName,
+  }) async {
+    final extracted = await ZipExtractor.extractChatContent(
+      bytes: bytes,
+      rawFileName: rawFileName,
+    );
+    await _processExtracted(extracted);
+  }
+
+  Future<void> _processExtracted(ExtractedChatContent extracted) async {
+    final parsed = await WhatsAppParser.parseChatContent(
+      rawFileName: extracted.fileName,
+      fileContent: extracted.fileContent,
+    );
+
+    if (parsed.messages.isEmpty) {
+      state = state.copyWith(
+        status: ImportStatus.error,
+        errorMessage:
+            'No se encontraron mensajes válidos de WhatsApp en el archivo.',
+      );
+      return;
+    }
+
+    final chatId = await DatabaseHelper.instance.insertFullChat(
+      chat: parsed.chat,
+      messages: parsed.messages,
+      participants: parsed.participants,
+    );
+
+    state = state.copyWith(
+      status: ImportStatus.success,
+      importedChatId: chatId,
+    );
   }
 
   void reset() {
