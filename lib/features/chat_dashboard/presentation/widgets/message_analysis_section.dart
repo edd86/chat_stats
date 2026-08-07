@@ -387,7 +387,9 @@ class _ParticipantAnalysisList extends StatelessWidget {
                     : BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                            color: AppColors.outlineVariant.withValues(
+                              alpha: 0.3,
+                            ),
                             width: 0.5,
                           ),
                         ),
@@ -400,7 +402,9 @@ class _ParticipantAnalysisList extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 14,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.2,
+                          ),
                           child: Text(
                             p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
                             style: const TextStyle(
@@ -414,9 +418,8 @@ class _ParticipantAnalysisList extends StatelessWidget {
                         Expanded(
                           child: Text(
                             p.name,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -499,10 +502,11 @@ class _ParticipantAnalysisList extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Texto: ${p.textPct.toStringAsFixed(0)}%  Media: ${p.mediaPct.toStringAsFixed(0)}%',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                            fontSize: 10,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 10,
+                              ),
                         ),
                       ],
                     ),
@@ -544,11 +548,12 @@ class _ParticipantAnalysisList extends StatelessWidget {
                         ),
                         child: Text(
                           'Msg más largo: "${p.longestPreview}"',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 10,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                                fontSize: 10,
+                              ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
