@@ -37,7 +37,11 @@ class MessageAnalysisSection extends StatelessWidget {
 
         // Per-participant analysis
         if (analysis.participants.isNotEmpty) ...[
-          _SectionTitle(title: 'ANÁLISIS POR PARTICIPANTE'),
+          _SectionTitle(
+            title: analysis.participants.length > 20
+                ? 'ANÁLISIS POR PARTICIPANTE (TOP 20)'
+                : 'ANÁLISIS POR PARTICIPANTE',
+          ),
           const SizedBox(height: 12),
           _ParticipantAnalysisList(participants: analysis.participants),
         ],
@@ -358,197 +362,218 @@ class _ParticipantAnalysisList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant, width: 0.5),
-      ),
-      child: Column(
-        children: participants.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final p = entry.value;
-          final isLast = idx == participants.length - 1;
+    final displayParticipants = participants.take(20).toList();
+    final remainingCount = participants.length - displayParticipants.length;
 
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: isLast
-                ? null
-                : BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                        width: 0.5,
-                      ),
-                    ),
-                  ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                      child: Text(
-                        p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        p.name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.outlineVariant, width: 0.5),
+          ),
+          child: Column(
+            children: displayParticipants.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final p = entry.value;
+              final isLast = idx == displayParticipants.length - 1;
 
-                // Stats grid
-                Row(
-                  children: [
-                    _StatChip(
-                      icon: Icons.straighten,
-                      label: 'Promedio',
-                      value: '${p.avgChars.toStringAsFixed(0)} chars',
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 8),
-                    _StatChip(
-                      icon: Icons.short_text,
-                      label: 'Más corto',
-                      value: '${p.shortestMsg} chars',
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _StatChip(
-                      icon: Icons.notes,
-                      label: 'Más largo',
-                      value: '${p.longestMsg} chars',
-                      color: AppColors.tertiary,
-                    ),
-                    const SizedBox(width: 8),
-                    _StatChip(
-                      icon: Icons.edit_outlined,
-                      label: 'Editados',
-                      value: '${p.editedCount}',
-                      color: AppColors.primary,
-                    ),
-                  ],
-                ),
-                if (p.deletedCount > 0) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _StatChip(
-                        icon: Icons.delete_outline,
-                        label: 'Eliminados',
-                        value: '${p.deletedCount}',
-                        color: AppColors.error,
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 8),
-
-                // Content breakdown bar
-                Row(
-                  children: [
-                    Icon(
-                      Icons.pie_chart_outline,
-                      size: 14,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: p.textPct / 100,
-                          backgroundColor: AppColors.tertiary,
-                          color: AppColors.secondary,
-                          minHeight: 6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Texto: ${p.textPct.toStringAsFixed(0)}%  Media: ${p.mediaPct.toStringAsFixed(0)}%',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Top emojis for this person
-                if (p.topEmojis.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text(
-                        'Emojis: ',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                      ...p.topEmojis.map(
-                        (e) => Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: Text(
-                            '${e.emoji}${e.count}',
-                            style: const TextStyle(fontSize: 12),
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: isLast
+                    ? null
+                    : BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                            width: 0.5,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                          child: Text(
+                            p.name.isNotEmpty ? p.name[0].toUpperCase() : '?',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            p.name,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
 
-                // Longest message preview
-                if (p.longestPreview.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(6),
+                    // Stats grid
+                    Row(
+                      children: [
+                        _StatChip(
+                          icon: Icons.straighten,
+                          label: 'Promedio',
+                          value: '${p.avgChars.toStringAsFixed(0)} chars',
+                          color: AppColors.secondary,
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          icon: Icons.short_text,
+                          label: 'Más corto',
+                          value: '${p.shortestMsg} chars',
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      'Msg más largo: "${p.longestPreview}"',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 10,
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _StatChip(
+                          icon: Icons.notes,
+                          label: 'Más largo',
+                          value: '${p.longestMsg} chars',
+                          color: AppColors.tertiary,
+                        ),
+                        const SizedBox(width: 8),
+                        _StatChip(
+                          icon: Icons.edit_outlined,
+                          label: 'Editados',
+                          value: '${p.editedCount}',
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
+                    if (p.deletedCount > 0) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _StatChip(
+                            icon: Icons.delete_outline,
+                            label: 'Eliminados',
+                            value: '${p.deletedCount}',
+                            color: AppColors.error,
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ],
+                    const SizedBox(height: 8),
+
+                    // Content breakdown bar
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.pie_chart_outline,
+                          size: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: p.textPct / 100,
+                              backgroundColor: AppColors.tertiary,
+                              color: AppColors.secondary,
+                              minHeight: 6,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Texto: ${p.textPct.toStringAsFixed(0)}%  Media: ${p.mediaPct.toStringAsFixed(0)}%',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ],
+
+                    // Top emojis for this person
+                    if (p.topEmojis.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text(
+                            'Emojis: ',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          ...p.topEmojis.map(
+                            (e) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Text(
+                                '${e.emoji}${e.count}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    // Longest message preview
+                    if (p.longestPreview.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Msg más largo: "${p.longestPreview}"',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 10,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        if (remainingCount > 0) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '+ $remainingCount participantes más en el análisis',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        ],
+      ],
     );
   }
 }
