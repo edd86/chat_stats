@@ -8,7 +8,7 @@ class ChatStatsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'WhatsApp Chat Stats',
+      title: 'Chats Stats',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
