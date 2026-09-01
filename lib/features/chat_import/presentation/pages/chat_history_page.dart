@@ -71,7 +71,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
         ref.read(chatListProvider.notifier).refreshChats();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Chat importado y guardado en SQLite con éxito!'),
+            content: Text('¡Chat importado con éxito!'),
             backgroundColor: AppColors.primaryContainer,
           ),
         );
@@ -119,7 +119,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             ),
             const SizedBox(height: 32),
             Text(
-              'CHATS GUARDADOS EN BASE DE DATOS SQLITE',
+              'CHATS IMPORTADOS',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: AppColors.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
