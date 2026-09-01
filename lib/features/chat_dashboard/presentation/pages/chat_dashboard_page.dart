@@ -46,7 +46,7 @@ class ChatDashboardPage extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                'Base de datos SQLite: ${chat?.fileName ?? ''}',
+                'Datos locales: ${chat?.fileName ?? ''}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 11,
@@ -63,14 +63,14 @@ class ChatDashboardPage extends ConsumerWidget {
             onPressed: () {
               context.push('/search/$chatId');
             },
-            tooltip: 'Buscar en SQLite',
+            tooltip: 'Buscar en Local',
           ),
         ],
       ),
       body: chatAsync.when(
         data: (chat) {
           if (chat == null) {
-            return const Center(child: Text('Chat no encontrado en SQLite.'));
+            return const Center(child: Text('Chat no encontrado localmente.'));
           }
 
           return SingleChildScrollView(

@@ -75,7 +75,7 @@ class _KpiSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uniqueWords = analysis.topWords.length;
+    final uniqueWords = analysis.uniqueWordsCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {

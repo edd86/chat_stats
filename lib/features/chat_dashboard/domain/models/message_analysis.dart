@@ -47,6 +47,7 @@ class MessageAnalysis {
   final List<MessageEmoji> topEmojisGeneral;
   final Map<String, List<MessageEmoji>> topEmojisByPerson;
   final List<ParticipantAnalysis> participants;
+  final int uniqueWordsCount;
   final int totalEdited;
   final int totalDeleted;
 
@@ -55,6 +56,7 @@ class MessageAnalysis {
     required this.topEmojisGeneral,
     required this.topEmojisByPerson,
     required this.participants,
+    required this.uniqueWordsCount,
     required this.totalEdited,
     required this.totalDeleted,
   });
@@ -64,6 +66,7 @@ class MessageAnalysis {
     topEmojisGeneral: [],
     topEmojisByPerson: {},
     participants: [],
+    uniqueWordsCount: 0,
     totalEdited: 0,
     totalDeleted: 0,
   );
@@ -77,48 +80,39 @@ class MessageAnalysis {
 
     // --- Word frequency ---
     const stopWords = {
-      'multimedia',
-      'omitido',
-      'omitted',
-      'media',
-      'foto',
-      'omitida',
-      'video',
-      'audio',
-      'documento',
-      'sticker',
-      'estíquer',
-      'adjunto',
-      'mensaje',
-      'editó',
-      'eliminó',
-      'borró',
-      'deleted',
-      'edited',
-      'this',
-      'was',
-      'este',
-      'esta',
-      'que',
-      'los',
-      'del',
-      'las',
-      'por',
-      'con',
-      'para',
-      'una',
-      'un',
-      'como',
-      'pero',
-      'mas',
-      'más',
-      'estos',
-      'estas',
-      'sin',
-      'sus',
-      'son',
-      'nos',
+      // Media/system
+      'multimedia', 'omitido', 'omitted', 'media', 'foto', 'omitida',
+      'video', 'audio', 'documento', 'sticker', 'estíquer', 'adjunto',
+      'mensaje', 'editó', 'eliminó', 'borró', 'deleted', 'edited',
+      'this', 'was',
+
+      // Conjunctions/prepositions
+      'que', 'los', 'del', 'las', 'por', 'con', 'para', 'una', 'un',
+      'como', 'pero', 'mas', 'más', 'sin', 'sus', 'son', 'nos',
+
+      // Demonstratives
+      'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas',
+      'aquel', 'aquella', 'aquellos', 'aquellas',
+
+      // Personal pronouns
+      'yo', 'tú', 'él', 'ella', 'usted', 'nosotros', 'vosotros',
+      'ellos', 'ellas', 'ustedes',
+
+      // Object pronouns
+      'me', 'te', 'se', 'lo', 'la', 'le', 'les',
+
+      // Possessive pronouns
+      'mío', 'mía', 'tuyo', 'tuya', 'suyo', 'suya',
+      'nuestro', 'nuestra', 'vuestro', 'vuestra',
+
+      // Adverbs
+      'muy', 'poco', 'nada', 'mucho', 'siempre', 'nunca', 'antes',
+      'después', 'aquí', 'allí', 'ahí', 'ahora', 'hoy', 'ayer',
+      'mañana', 'también', 'tampoco', 'solo', 'apenas', 'quizás',
+      'bien', 'mal', 'así', 'entonces', 'todavía', 'ya',
     };
+
+    final laughPattern = RegExp(r'^(ja|je|ji|ju|ha|he|hi)+$');
 
     final wordCount = <String, int>{};
     final emojiPattern = RegExp(
@@ -146,7 +140,7 @@ class MessageAnalysis {
       final cleaned = content.replaceAll(wordCleanPattern, '').toLowerCase();
       final words = cleaned
           .split(RegExp(r'\s+'))
-          .where((w) => w.length > 2 && !stopWords.contains(w));
+          .where((w) => w.length > 2 && !stopWords.contains(w) && !laughPattern.hasMatch(w));
       for (final w in words) {
         wordCount[w] = (wordCount[w] ?? 0) + 1;
       }
@@ -265,6 +259,7 @@ class MessageAnalysis {
       topEmojisGeneral: topEmojisGeneral,
       topEmojisByPerson: topEmojisByPerson,
       participants: participantList,
+      uniqueWordsCount: wordCount.length,
       totalEdited: totalEdited,
       totalDeleted: totalDeleted,
     );
