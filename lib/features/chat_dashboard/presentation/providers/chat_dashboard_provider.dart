@@ -59,6 +59,11 @@ final chatAnalysisProvider = FutureProvider.family
       return MessageAnalysis.process(messages, edited, content);
     });
 
+final chatRecordDayProvider = FutureProvider.family
+    .autoDispose<Map<String, dynamic>?, int>((ref, chatId) async {
+      return await DatabaseHelper.instance.getActiveDayRecord(chatId);
+    });
+
 enum ActivityChartTimeframe { all, last30Days }
 
 class ActivityChartFilterNotifier extends Notifier<ActivityChartTimeframe> {

@@ -10,11 +10,35 @@ import '../widgets/participants_chart.dart';
 import '../widgets/activity_heatmap.dart';
 import '../widgets/conversation_dynamics.dart';
 import '../widgets/message_analysis_section.dart';
+import '../widgets/records_card.dart';
+import '../widgets/social_roles_section.dart';
+import '../widgets/chat_wrapped_dialog.dart';
+import '../../domain/models/conversation_dynamics.dart';
+import '../../domain/models/message_analysis.dart';
 
 class ChatDashboardPage extends ConsumerWidget {
   final int chatId;
 
   const ChatDashboardPage({super.key, required this.chatId});
+
+  String _formatChatSpan(int? firstMs, int? lastMs) {
+    if (firstMs == null || lastMs == null) return 'N/A';
+    final diff = DateTime.fromMillisecondsSinceEpoch(
+      lastMs,
+    ).difference(DateTime.fromMillisecondsSinceEpoch(firstMs));
+    final days = diff.inDays;
+    if (days >= 365) {
+      final years = (days / 365).floor();
+      final remMonths = ((days % 365) / 30).floor();
+      return remMonths > 0 ? '${years}a ${remMonths}m' : '$years años';
+    } else if (days >= 30) {
+      final months = (days / 30).floor();
+      final remDays = days % 30;
+      return remDays > 0 ? '${months}m ${remDays}d' : '$months meses';
+    } else {
+      return '$days días';
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,6 +49,7 @@ class ChatDashboardPage extends ConsumerWidget {
     final heatmapAsync = ref.watch(chatHeatmapProvider(chatId));
     final dynamicsAsync = ref.watch(chatDynamicsProvider(chatId));
     final analysisAsync = ref.watch(chatAnalysisProvider(chatId));
+    final recordDayAsync = ref.watch(chatRecordDayProvider(chatId));
 
     return Scaffold(
       appBar: AppBar(
@@ -58,6 +83,65 @@ class ChatDashboardPage extends ConsumerWidget {
           error: (_, _) => const Text('Error'),
         ),
         actions: [
+          // Wrapped Story Button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                final chat = chatAsync.value;
+                if (chat != null) {
+                  ChatWrappedDialog.show(
+                    context,
+                    chat: chat,
+                    dynamics:
+                        dynamicsAsync.value ?? ConversationDynamics.empty(),
+                    analysis: analysisAsync.value ?? MessageAnalysis.empty(),
+                    recordDay: recordDayAsync.value,
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, Color(0xFF00B894)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 15,
+                      color: Color(0xFF003915),
+                    ),
+                    SizedBox(width: 5),
+                    Text(
+                      'Wrapped',
+                      style: TextStyle(
+                        color: Color(0xFF003915),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.search, color: AppColors.primary),
             onPressed: () {
@@ -65,6 +149,7 @@ class ChatDashboardPage extends ConsumerWidget {
             },
             tooltip: 'Buscar en Local',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: chatAsync.when(
@@ -73,12 +158,24 @@ class ChatDashboardPage extends ConsumerWidget {
             return const Center(child: Text('Chat no encontrado localmente.'));
           }
 
+          final analysis = analysisAsync.value;
+          int totalDays = 1;
+          if (chat.firstMessageTime != null && chat.lastMessageTime != null) {
+            final d = DateTime.fromMillisecondsSinceEpoch(chat.lastMessageTime!)
+                .difference(
+                  DateTime.fromMillisecondsSinceEpoch(chat.firstMessageTime!),
+                )
+                .inDays;
+            if (d > 0) totalDays = d;
+          }
+          final pace = (chat.totalMessages / totalDays).toStringAsFixed(1);
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // KPI Grid
+                // KPI Grid (8 Cards)
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
@@ -95,28 +192,72 @@ class ChatDashboardPage extends ConsumerWidget {
                           value: '${chat.totalMessages}',
                           icon: Icons.message_outlined,
                           color: AppColors.primary,
+                          subtitle: 'Total intercambiados',
                         ),
                         KpiCard(
                           title: 'Usuarios',
                           value: '${chat.participantCount}',
                           icon: Icons.people_outline,
                           color: AppColors.secondary,
+                          subtitle: 'Participantes',
+                        ),
+                        KpiCard(
+                          title: 'Antigüedad',
+                          value: _formatChatSpan(
+                            chat.firstMessageTime,
+                            chat.lastMessageTime,
+                          ),
+                          icon: Icons.date_range_outlined,
+                          color: AppColors.tertiary,
+                          subtitle: 'Duración total',
+                        ),
+                        KpiCard(
+                          title: 'Ritmo Diario',
+                          value: pace,
+                          icon: Icons.speed_outlined,
+                          color: AppColors.primary,
+                          subtitle: 'msgs / día',
                         ),
                         KpiCard(
                           title: 'Multimedia',
                           value: '${chat.totalMedia}',
                           icon: Icons.perm_media_outlined,
                           color: AppColors.tertiary,
+                          subtitle: 'Archivos adjuntos',
                         ),
                         KpiCard(
                           title: 'Palabras',
                           value: '${chat.totalWords}',
                           icon: Icons.article_outlined,
+                          color: AppColors.secondary,
+                          subtitle: 'Total texto',
+                        ),
+                        KpiCard(
+                          title: 'Enlaces Web',
+                          value: '${analysis?.totalLinks ?? 0}',
+                          icon: Icons.link_rounded,
                           color: AppColors.primary,
+                          subtitle: 'Links compartidos',
+                        ),
+                        KpiCard(
+                          title: 'Borrados / Edit.',
+                          value:
+                              '${analysis?.totalDeleted ?? 0} / ${analysis?.totalEdited ?? 0}',
+                          icon: Icons.auto_delete_outlined,
+                          color: AppColors.outline,
+                          subtitle: 'Eliminados / Editados',
                         ),
                       ],
                     );
                   },
+                ),
+                const SizedBox(height: 24),
+
+                // Records Card (Most active day & longest silence)
+                RecordsCard(
+                  recordDay: recordDayAsync.value,
+                  longestSilence: dynamicsAsync.value?.longestSilence,
+                  totalMessages: chat.totalMessages,
                 ),
                 const SizedBox(height: 24),
 
@@ -164,6 +305,15 @@ class ChatDashboardPage extends ConsumerWidget {
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
                 ),
+
+                // Social Roles Section (Audio vs Writer, Response speed, Questions, Mentions)
+                if (dynamicsAsync.hasValue && analysisAsync.hasValue) ...[
+                  const SizedBox(height: 28),
+                  SocialRolesSection(
+                    dynamics: dynamicsAsync.value!,
+                    analysis: analysisAsync.value!,
+                  ),
+                ],
 
                 // Detailed Participant Breakdown List (Top 10)
                 const SizedBox(height: 28),

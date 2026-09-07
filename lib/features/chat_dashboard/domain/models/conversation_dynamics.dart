@@ -6,6 +6,34 @@ class ResponsePair {
   const ResponsePair({required this.from, required this.to, required this.count});
 }
 
+class ChatSilence {
+  final DateTime start;
+  final DateTime end;
+  final Duration duration;
+  final String lastSenderBefore;
+  final String firstSenderAfter;
+
+  const ChatSilence({
+    required this.start,
+    required this.end,
+    required this.duration,
+    required this.lastSenderBefore,
+    required this.firstSenderAfter,
+  });
+}
+
+class ParticipantResponseTime {
+  final String name;
+  final Duration avgResponseTime;
+  final int responsesCount;
+
+  const ParticipantResponseTime({
+    required this.name,
+    required this.avgResponseTime,
+    required this.responsesCount,
+  });
+}
+
 class ConversationThread {
   final DateTime start;
   final DateTime end;
@@ -28,6 +56,8 @@ class ConversationDynamics {
   final ConversationThread? longestThread;
   final Map<String, int> consecutiveMax;
   final int totalDays;
+  final ChatSilence? longestSilence;
+  final List<ParticipantResponseTime> responseTimes;
 
   const ConversationDynamics({
     required this.initiators,
@@ -35,6 +65,8 @@ class ConversationDynamics {
     required this.longestThread,
     required this.consecutiveMax,
     required this.totalDays,
+    this.longestSilence,
+    this.responseTimes = const [],
   });
 
   static ConversationDynamics empty() => const ConversationDynamics(
@@ -43,6 +75,8 @@ class ConversationDynamics {
     longestThread: null,
     consecutiveMax: {},
     totalDays: 0,
+    longestSilence: null,
+    responseTimes: [],
   );
 
   static ConversationDynamics process(List<Map<String, dynamic>> stream) {
@@ -51,6 +85,10 @@ class ConversationDynamics {
     final initiators = <String, int>{};
     final responseMatrix = <String, Map<String, int>>{};
     final consecutiveMax = <String, int>{};
+    final userResponseGaps = <String, List<int>>{};
+
+    int maxGapMs = 0;
+    int silenceStartIndex = -1;
 
     String? prevSender;
     int currentStreak = 0;
@@ -83,6 +121,23 @@ class ConversationDynamics {
         initiators[sender] = (initiators[sender] ?? 0) + 1;
       }
 
+      if (i > 0) {
+        final prevTs = stream[i - 1]['timestamp'] as int;
+        final gapMs = ts - prevTs;
+
+        // Longest silence tracking
+        if (gapMs > maxGapMs) {
+          maxGapMs = gapMs;
+          silenceStartIndex = i - 1;
+        }
+
+        // Response time tracking (gaps under 24 hours between different senders)
+        if (prevSender != null && prevSender != sender && gapMs > 0 && gapMs <= 86400000) {
+          userResponseGaps.putIfAbsent(sender, () => []);
+          userResponseGaps[sender]!.add(gapMs);
+        }
+      }
+
       // Response matrix
       if (prevSender != null && prevSender != sender) {
         responseMatrix.putIfAbsent(prevSender, () => {});
@@ -104,6 +159,39 @@ class ConversationDynamics {
 
       prevSender = sender;
     }
+
+    // Longest silence object
+    ChatSilence? longestSilence;
+    if (silenceStartIndex >= 0 && maxGapMs > 0) {
+      longestSilence = ChatSilence(
+        start: DateTime.fromMillisecondsSinceEpoch(
+          stream[silenceStartIndex]['timestamp'] as int,
+        ),
+        end: DateTime.fromMillisecondsSinceEpoch(
+          stream[silenceStartIndex + 1]['timestamp'] as int,
+        ),
+        duration: Duration(milliseconds: maxGapMs),
+        lastSenderBefore: stream[silenceStartIndex]['sender'] as String,
+        firstSenderAfter: stream[silenceStartIndex + 1]['sender'] as String,
+      );
+    }
+
+    // Response times per user (sorted fastest to slowest)
+    final responseTimes = <ParticipantResponseTime>[];
+    userResponseGaps.forEach((user, gaps) {
+      if (gaps.isNotEmpty) {
+        final totalMs = gaps.reduce((a, b) => a + b);
+        final avgMs = (totalMs / gaps.length).round();
+        responseTimes.add(
+          ParticipantResponseTime(
+            name: user,
+            avgResponseTime: Duration(milliseconds: avgMs),
+            responsesCount: gaps.length,
+          ),
+        );
+      }
+    });
+    responseTimes.sort((a, b) => a.avgResponseTime.compareTo(b.avgResponseTime));
 
     // Find longest conversation thread (gap > 1 hour)
     if (stream.length >= 2) {
@@ -164,6 +252,8 @@ class ConversationDynamics {
       longestThread: longestThread,
       consecutiveMax: consecutiveMax,
       totalDays: totalDays,
+      longestSilence: longestSilence,
+      responseTimes: responseTimes,
     );
   }
 }

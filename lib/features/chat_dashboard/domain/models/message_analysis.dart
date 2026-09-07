@@ -25,6 +25,10 @@ class ParticipantAnalysis {
   final double textPct;
   final double mediaPct;
   final List<MessageEmoji> topEmojis;
+  final int questionCount;
+  final int wordsCount;
+  final int mentionsCount;
+  final int mentionsReceivedCount;
 
   const ParticipantAnalysis({
     required this.name,
@@ -39,6 +43,10 @@ class ParticipantAnalysis {
     required this.textPct,
     required this.mediaPct,
     required this.topEmojis,
+    this.questionCount = 0,
+    this.wordsCount = 0,
+    this.mentionsCount = 0,
+    this.mentionsReceivedCount = 0,
   });
 }
 
@@ -50,6 +58,9 @@ class MessageAnalysis {
   final int uniqueWordsCount;
   final int totalEdited;
   final int totalDeleted;
+  final int totalLinks;
+  final int totalQuestions;
+  final Map<String, int> mentionsReceived;
 
   const MessageAnalysis({
     required this.topWords,
@@ -59,6 +70,9 @@ class MessageAnalysis {
     required this.uniqueWordsCount,
     required this.totalEdited,
     required this.totalDeleted,
+    this.totalLinks = 0,
+    this.totalQuestions = 0,
+    this.mentionsReceived = const {},
   });
 
   static MessageAnalysis empty() => const MessageAnalysis(
@@ -69,6 +83,9 @@ class MessageAnalysis {
     uniqueWordsCount: 0,
     totalEdited: 0,
     totalDeleted: 0,
+    totalLinks: 0,
+    totalQuestions: 0,
+    mentionsReceived: {},
   );
 
   static MessageAnalysis process(
@@ -113,6 +130,13 @@ class MessageAnalysis {
     };
 
     final laughPattern = RegExp(r'^(ja|je|ji|ju|ha|he|hi)+$');
+    final linkPattern = RegExp(r'https?:\/\/[^\s]+', caseSensitive: false);
+
+    final allSenders = messages
+        .map((m) => m['sender'] as String)
+        .where((s) => s.isNotEmpty && s != 'Sistema')
+        .toSet()
+        .toList();
 
     final wordCount = <String, int>{};
     final emojiPattern = RegExp(
@@ -129,6 +153,13 @@ class MessageAnalysis {
     final Map<String, String> longestPreview = {};
     final Map<String, int> shortestMsg = {};
     final Map<String, int> deletedCount = {};
+    final Map<String, int> questionCountByPerson = {};
+    final Map<String, int> wordsCountByPerson = {};
+    final Map<String, int> mentionsCountByPerson = {};
+    final Map<String, int> mentionsReceivedByPerson = {};
+
+    int totalLinks = 0;
+    int totalQuestions = 0;
 
     for (final row in messages) {
       final sender = row['sender'] as String;
@@ -136,7 +167,37 @@ class MessageAnalysis {
       final charCount = row['char_count'] as int;
       final isDeleted = (row['is_deleted'] as int?) == 1;
 
-      // Words
+      // Links
+      if (linkPattern.hasMatch(content)) {
+        totalLinks += linkPattern.allMatches(content).length;
+      }
+
+      // Questions
+      if (content.contains('?') || content.contains('¿')) {
+        totalQuestions++;
+        questionCountByPerson[sender] = (questionCountByPerson[sender] ?? 0) + 1;
+      }
+
+      // Words count per person (raw words)
+      final rawWords = content.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+      wordsCountByPerson[sender] = (wordsCountByPerson[sender] ?? 0) + rawWords.length;
+
+      // Mentions (@)
+      if (content.contains('@')) {
+        for (final target in allSenders) {
+          if (target != sender) {
+            final firstName = target.split(' ').first;
+            if (content.contains('@$target') ||
+                (firstName.length >= 3 && content.contains('@$firstName'))) {
+              mentionsCountByPerson[sender] = (mentionsCountByPerson[sender] ?? 0) + 1;
+              mentionsReceivedByPerson[target] =
+                  (mentionsReceivedByPerson[target] ?? 0) + 1;
+            }
+          }
+        }
+      }
+
+      // Words frequency for word cloud
       final cleaned = content.replaceAll(wordCleanPattern, '').toLowerCase();
       final words = cleaned
           .split(RegExp(r'\s+'))
@@ -197,9 +258,9 @@ class MessageAnalysis {
       final sorted = emojiMap.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       topEmojisByPerson[person] = sorted
-          .take(5)
-          .map((e) => MessageEmoji(emoji: e.key, count: e.value))
-          .toList();
+        .take(5)
+        .map((e) => MessageEmoji(emoji: e.key, count: e.value))
+        .toList();
     });
 
     // Edited stats map
@@ -244,6 +305,10 @@ class MessageAnalysis {
           textPct: total > 0 ? textCount / total * 100 : 0,
           mediaPct: total > 0 ? mediaCount / total * 100 : 0,
           topEmojis: topEmojisByPerson[sender] ?? [],
+          questionCount: questionCountByPerson[sender] ?? 0,
+          wordsCount: wordsCountByPerson[sender] ?? 0,
+          mentionsCount: mentionsCountByPerson[sender] ?? 0,
+          mentionsReceivedCount: mentionsReceivedByPerson[sender] ?? 0,
         ),
       );
     }
@@ -262,6 +327,9 @@ class MessageAnalysis {
       uniqueWordsCount: wordCount.length,
       totalEdited: totalEdited,
       totalDeleted: totalDeleted,
+      totalLinks: totalLinks,
+      totalQuestions: totalQuestions,
+      mentionsReceived: mentionsReceivedByPerson,
     );
   }
 }
