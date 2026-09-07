@@ -36,8 +36,24 @@ class DatabaseHelper {
     return await openDatabase(
       path,
       version: 2,
+      onConfigure: _onConfigure,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
+      onOpen: _onOpen,
+    );
+  }
+
+  Future<void> _onConfigure(Database db) async {
+    await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  Future<void> _onOpen(Database db) async {
+    // Clean up any previously orphaned records if chats were deleted before foreign keys were active
+    await db.execute(
+      'DELETE FROM messages WHERE chat_id NOT IN (SELECT id FROM chats)',
+    );
+    await db.execute(
+      'DELETE FROM participants WHERE chat_id NOT IN (SELECT id FROM chats)',
     );
   }
 
@@ -187,6 +203,23 @@ class DatabaseHelper {
     );
   }
 
+  Future<Map<String, dynamic>?> getActiveDayRecord(int chatId) async {
+    final db = await instance.database;
+    final res = await db.rawQuery(
+      '''
+      SELECT date_str, COUNT(*) as count 
+      FROM messages 
+      WHERE chat_id = ? AND is_system = 0
+      GROUP BY date_str 
+      ORDER BY count DESC 
+      LIMIT 1
+    ''',
+      [chatId],
+    );
+    if (res.isNotEmpty) return res.first;
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> getHourlyDistribution(int chatId) async {
     final db = await instance.database;
     // Extract hour from time_str (HH:mm format)
@@ -292,6 +325,17 @@ class DatabaseHelper {
 
   Future<int> deleteChat(int chatId) async {
     final db = await instance.database;
-    return await db.delete('chats', where: 'id = ?', whereArgs: [chatId]);
+    int deleted = 0;
+    await db.transaction((txn) async {
+      await txn.delete('messages', where: 'chat_id = ?', whereArgs: [chatId]);
+      await txn.delete('participants', where: 'chat_id = ?', whereArgs: [chatId]);
+      deleted = await txn.delete('chats', where: 'id = ?', whereArgs: [chatId]);
+    });
+    try {
+      await db.execute('VACUUM');
+    } catch (_) {
+      // Ignored if concurrent operations prevent VACUUM
+    }
+    return deleted;
   }
 }
