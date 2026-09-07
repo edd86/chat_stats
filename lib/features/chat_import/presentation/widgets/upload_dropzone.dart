@@ -77,14 +77,14 @@ class UploadDropzone extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.outlineVariant,
-                    width: 1,
-                  ),
+                  border: Border.all(color: AppColors.outlineVariant, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

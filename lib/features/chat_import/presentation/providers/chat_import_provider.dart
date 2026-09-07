@@ -47,12 +47,12 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
         allowedExtensions: ['txt', 'zip'],
       );
 
-      if (result == null || result.files.isEmpty) {
+      if (result.isEmpty) {
         state = state.copyWith(status: ImportStatus.idle);
         return;
       }
 
-      final file = result.files.first;
+      final file = result.first;
       final bytes = await file.readAsBytes();
 
       await _processBytes(bytes: bytes, rawFileName: file.name);
