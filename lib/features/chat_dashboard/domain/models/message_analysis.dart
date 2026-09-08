@@ -184,14 +184,39 @@ class MessageAnalysis {
 
       // Mentions (@)
       if (content.contains('@')) {
+        final bidiPattern = RegExp(
+          r'[\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]',
+        );
+        final cleanContent = content.replaceAll(bidiPattern, '');
+
         for (final target in allSenders) {
           if (target != sender) {
-            final firstName = target.split(' ').first;
-            if (content.contains('@$target') ||
-                (firstName.length >= 3 && content.contains('@$firstName'))) {
-              mentionsCountByPerson[sender] = (mentionsCountByPerson[sender] ?? 0) + 1;
+            final cleanTarget = target.replaceAll(bidiPattern, '').trim();
+            if (cleanTarget.isEmpty) continue;
+
+            final firstName = cleanTarget.split(' ').first;
+            final escapedTarget = RegExp.escape(cleanTarget);
+            final escapedFirstName = RegExp.escape(firstName);
+
+            final RegExp pattern;
+            if (firstName.length >= 3 && firstName != cleanTarget) {
+              pattern = RegExp(
+                r'@' + escapedTarget + r'|@' + escapedFirstName,
+                caseSensitive: false,
+              );
+            } else {
+              pattern = RegExp(
+                r'@' + escapedTarget,
+                caseSensitive: false,
+              );
+            }
+
+            final matchCount = pattern.allMatches(cleanContent).length;
+            if (matchCount > 0) {
+              mentionsCountByPerson[sender] =
+                  (mentionsCountByPerson[sender] ?? 0) + matchCount;
               mentionsReceivedByPerson[target] =
-                  (mentionsReceivedByPerson[target] ?? 0) + 1;
+                  (mentionsReceivedByPerson[target] ?? 0) + matchCount;
             }
           }
         }

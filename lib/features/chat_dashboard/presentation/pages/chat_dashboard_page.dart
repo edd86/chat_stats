@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/ad_banner_widget.dart';
 import '../providers/chat_dashboard_provider.dart';
 import '../widgets/activity_chart.dart';
 import '../widgets/hourly_chart.dart';
@@ -477,6 +478,7 @@ class ChatDashboardPage extends ConsumerWidget {
         ),
         error: (err, _) => Center(child: Text('Error: $err')),
       ),
+      bottomNavigationBar: const AdBannerWidget(),
     );
   }
 }
