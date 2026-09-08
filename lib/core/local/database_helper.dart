@@ -87,6 +87,7 @@ class DatabaseHelper {
         is_system INTEGER NOT NULL DEFAULT 0,
         is_media INTEGER NOT NULL DEFAULT 0,
         is_edited INTEGER NOT NULL DEFAULT 0,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
         word_count INTEGER NOT NULL DEFAULT 0,
         char_count INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE CASCADE
