@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/ad_service.dart';
+import '../../../../core/widgets/ad_banner_widget.dart';
 import '../providers/chat_import_provider.dart';
 import '../widgets/chat_card.dart';
 import '../widgets/upload_dropzone.dart';
@@ -43,6 +45,8 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
     ) {
       _processSharedFiles(value);
       ReceiveSharingIntent.instance.reset();
+    }).catchError((err) {
+      debugPrint("Error al recibir intent inicial de compartir: $err");
     });
   }
 
@@ -68,6 +72,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
 
     ref.listen<ChatImportState>(chatImportProvider, (previous, next) {
       if (next.status == ImportStatus.success && next.importedChatId != null) {
+        final importedId = next.importedChatId!;
         ref.read(chatListProvider.notifier).refreshChats();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -75,8 +80,16 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             backgroundColor: AppColors.primaryContainer,
           ),
         );
-        context.push('/dashboard/${next.importedChatId}');
         ref.read(chatImportProvider.notifier).reset();
+
+        // Display interstitial ad before transitioning to dashboard
+        AdService.instance.showInterstitialAd(
+          onAdDismissed: () {
+            if (context.mounted) {
+              context.push('/dashboard/$importedId');
+            }
+          },
+        );
       } else if (next.status == ImportStatus.error &&
           next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -174,6 +187,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
           ],
         ),
       ),
+      bottomNavigationBar: const AdBannerWidget(),
     );
   }
 }

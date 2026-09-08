@@ -26,11 +26,17 @@ class WhatsAppParser {
     r'^(\d{1,2}\/\d{1,2}\/\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[aApP]\.?\s*[mM]\.?)?)\s*-\s*(.+)$',
   );
 
+  // Invisible bidi and control characters used by WhatsApp (e.g. U+2068 FSI, U+2069 PDI, U+200E, U+200F)
+  static final RegExp _bidiRegex = RegExp(
+    r'[\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]',
+  );
+
   /// Extract chat title from file name
   /// e.g., "Chat de WhatsApp con En este grupo no se Admiten Ronalds 😅.txt" -> "En este grupo no se Admiten Ronalds 😅"
   static String extractChatTitle(String rawFileName) {
     String cleanName = rawFileName
         .replaceAll(RegExp(r'\.txt$', caseSensitive: false), '')
+        .replaceAll(_bidiRegex, '')
         .trim();
 
     final prefixMatch = RegExp(
@@ -65,7 +71,8 @@ class WhatsAppParser {
     _RawMessage? currentMsg;
 
     for (final line in lines) {
-      final match = _lineRegex.firstMatch(line);
+      final sanitizedLine = line.replaceAll(_bidiRegex, '');
+      final match = _lineRegex.firstMatch(sanitizedLine);
       if (match != null) {
         if (currentMsg != null) {
           rawMessages.add(currentMsg);
@@ -77,7 +84,7 @@ class WhatsAppParser {
         );
       } else if (currentMsg != null) {
         // Multi-line continuation
-        currentMsg.body = '${currentMsg.body}\n$line';
+        currentMsg.body = '${currentMsg.body}\n$sanitizedLine';
       }
     }
     if (currentMsg != null) {
