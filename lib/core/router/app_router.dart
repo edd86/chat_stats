@@ -7,6 +7,17 @@ import '../../features/chat_dashboard/presentation/pages/chat_search_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
+  redirect: (context, state) {
+    final uri = state.uri;
+    if (uri.scheme == 'content' ||
+        uri.scheme == 'file' ||
+        uri.path.startsWith('content:') ||
+        uri.path.startsWith('file:')) {
+      return '/';
+    }
+    return null;
+  },
+  errorBuilder: (context, state) => const ChatHistoryPage(),
   routes: [
     GoRoute(
       path: '/',
