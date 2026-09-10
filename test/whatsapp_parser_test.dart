@@ -95,5 +95,78 @@ void main() {
         expect(analysis.mentionsReceived['Mama'], equals(1));
       },
     );
+
+    test('parseChatContent supports iOS bracket format [date, time]', () async {
+      const sampleText = '''
+[3/7/24, 14:31:05] Maria: Hola chicos
+[3/7/24, 14:32:10] Juan: Hola Maria, ¿cómo estás?
+''';
+
+      final result = await WhatsAppParser.parseChatContent(
+        rawFileName: '_chat.txt',
+        fileContent: sampleText,
+      );
+
+      expect(result.messages.length, equals(2));
+      expect(result.participants.length, equals(2));
+      expect(
+        result.participants.map((p) => p.name),
+        containsAll(['Maria', 'Juan']),
+      );
+      expect(WhatsAppParser.isValidWhatsAppChat(result), isTrue);
+    });
+
+    test('isValidWhatsAppChat returns false for non-chat text files', () async {
+      const sampleText = '''
+This is a shopping list:
+- Apples
+- Bananas
+- Milk
+''';
+
+      final result = await WhatsAppParser.parseChatContent(
+        rawFileName: 'notes.txt',
+        fileContent: sampleText,
+      );
+
+      expect(result.messages.isEmpty, isTrue);
+      expect(WhatsAppParser.isValidWhatsAppChat(result), isFalse);
+    });
+
+    test(
+      'isValidWhatsAppChat returns false for generic logs without senders or WhatsApp system messages',
+      () async {
+        const sampleText = '''
+01/01/2024, 12:00 - Database connection established
+01/01/2024, 12:01 - Server listening on port 8080
+''';
+
+        final result = await WhatsAppParser.parseChatContent(
+          rawFileName: 'server_log.txt',
+          fileContent: sampleText,
+        );
+
+        expect(result.messages.length, equals(2));
+        expect(result.participants.isEmpty, isTrue);
+        expect(WhatsAppParser.isValidWhatsAppChat(result), isFalse);
+      },
+    );
+
+    test(
+      'isValidWhatsAppChat returns true for chat with WhatsApp encryption system message',
+      () async {
+        const sampleText = '''
+03/07/2024, 14:31 - Los mensajes y las llamadas están cifrados de extremo a extremo.
+''';
+
+        final result = await WhatsAppParser.parseChatContent(
+          rawFileName: 'Chat de WhatsApp con Test.txt',
+          fileContent: sampleText,
+        );
+
+        expect(result.messages.length, equals(1));
+        expect(WhatsAppParser.isValidWhatsAppChat(result), isTrue);
+      },
+    );
   });
 }

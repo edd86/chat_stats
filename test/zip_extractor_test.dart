@@ -64,5 +64,40 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test(
+      'throws FormatException if non-zip file does not have .txt extension',
+      () async {
+        final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+
+        expect(
+          () async => await ZipExtractor.extractChatContent(
+            bytes: bytes,
+            rawFileName: 'presentation.pdf',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
+
+    test('throws FormatException if .zip file is corrupted', () async {
+      // Magic PK header but corrupted data
+      final corruptedZipBytes = Uint8List.fromList([
+        0x50,
+        0x4B,
+        0x03,
+        0x04,
+        0x00,
+        0x00,
+      ]);
+
+      expect(
+        () async => await ZipExtractor.extractChatContent(
+          bytes: corruptedZipBytes,
+          rawFileName: 'broken.zip',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }
