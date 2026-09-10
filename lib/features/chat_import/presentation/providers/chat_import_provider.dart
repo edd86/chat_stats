@@ -1,5 +1,6 @@
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/local/database_helper.dart';
 import '../../domain/models/chat_model.dart';
@@ -38,6 +39,18 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
     return const ChatImportState();
   }
 
+  static bool _isValidExtension(String fileName) {
+    final lower = fileName.toLowerCase().trim();
+    return lower.endsWith('.zip') || lower.endsWith('.txt');
+  }
+
+  String _formatErrorMessage(Object error) {
+    if (error is FormatException) {
+      return error.message;
+    }
+    return 'Error al importar archivo: ${error.toString()}';
+  }
+
   Future<void> pickAndImportChatFile() async {
     try {
       state = state.copyWith(status: ImportStatus.loading, errorMessage: null);
@@ -53,13 +66,24 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
       }
 
       final file = result.first;
+
+      // 1. Validate file extension
+      if (!_isValidExtension(file.name)) {
+        state = state.copyWith(
+          status: ImportStatus.error,
+          errorMessage:
+              'La extensión del archivo no es admitida por la app. Solo se permiten archivos .zip y .txt.',
+        );
+        return;
+      }
+
       final bytes = await file.readAsBytes();
 
       await _processBytes(bytes: bytes, rawFileName: file.name);
     } catch (e) {
       state = state.copyWith(
         status: ImportStatus.error,
-        errorMessage: 'Error al importar archivo: ${e.toString()}',
+        errorMessage: _formatErrorMessage(e),
       );
     }
   }
@@ -68,12 +92,39 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
     try {
       state = state.copyWith(status: ImportStatus.loading, errorMessage: null);
 
-      final extracted = await ZipExtractor.extractFromFilePath(filePath);
+      var effectivePath = filePath;
+      if (effectivePath.startsWith('content://') ||
+          effectivePath.startsWith('file://')) {
+        try {
+          const channel = MethodChannel('dev.codedd.chat_stats/app_intent');
+          final localPath = await channel.invokeMethod<String>(
+            'copyUriToCache',
+            {'uri': effectivePath},
+          );
+          if (localPath != null && localPath.isNotEmpty) {
+            effectivePath = localPath;
+          }
+        } catch (e) {
+          debugPrint('Error al copiar URI a cache: $e');
+        }
+      }
+
+      // 1. Validate file extension
+      if (!_isValidExtension(effectivePath)) {
+        state = state.copyWith(
+          status: ImportStatus.error,
+          errorMessage:
+              'La extensión del archivo no es admitida por la app. Solo se permiten archivos .zip y .txt.',
+        );
+        return;
+      }
+
+      final extracted = await ZipExtractor.extractFromFilePath(effectivePath);
       await _processExtracted(extracted);
     } catch (e) {
       state = state.copyWith(
         status: ImportStatus.error,
-        errorMessage: 'Error al procesar archivo compartido: ${e.toString()}',
+        errorMessage: _formatErrorMessage(e),
       );
     }
   }
@@ -95,11 +146,12 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
       fileContent: extracted.fileContent,
     );
 
-    if (parsed.messages.isEmpty) {
+    // 2. Validate that content corresponds to a WhatsApp chat
+    if (!WhatsAppParser.isValidWhatsAppChat(parsed)) {
       state = state.copyWith(
         status: ImportStatus.error,
         errorMessage:
-            'No se encontraron mensajes válidos de WhatsApp en el archivo.',
+            'El archivo seleccionado no corresponde a un chat de WhatsApp.',
       );
       return;
     }

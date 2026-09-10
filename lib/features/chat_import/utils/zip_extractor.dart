@@ -22,6 +22,11 @@ class ZipExtractor {
     final bool isZip = _isZipFile(bytes, rawFileName);
 
     if (!isZip) {
+      if (!rawFileName.toLowerCase().endsWith('.txt')) {
+        throw const FormatException(
+          'La extensión del archivo no es admitida por la app. Solo se permiten archivos .zip y .txt.',
+        );
+      }
       final String content = _decodeUtf8(bytes);
       return ExtractedChatContent(
         fileName: rawFileName,
@@ -33,8 +38,10 @@ class ZipExtractor {
     final Archive archive;
     try {
       archive = ZipDecoder().decodeBytes(bytes);
-    } catch (e) {
-      throw FormatException('El archivo .zip está dañado o no es válido: $e');
+    } catch (_) {
+      throw const FormatException(
+        'El archivo .zip está dañado o no es un archivo comprimido válido.',
+      );
     }
 
     ArchiveFile? chatTxtFile;
@@ -55,7 +62,7 @@ class ZipExtractor {
 
     if (chatTxtFile == null) {
       throw const FormatException(
-        'No se encontró ningún archivo de chat .txt dentro del archivo .zip.',
+        'El archivo .zip no contiene ningún chat de WhatsApp.',
       );
     }
 

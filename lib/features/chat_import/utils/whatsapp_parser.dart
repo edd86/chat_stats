@@ -17,19 +17,60 @@ class ParsedChatResult {
 }
 
 class WhatsAppParser {
-  // Regex for WhatsApp line start: Date Time - Body
+  // Regex for WhatsApp line start (Android / Standard format): "Date, Time - Body" or "Date Time - Body"
   // Supports formats:
   // "3/7/24 14:31 - ..."
   // "03/07/2024, 14:31 - ..."
   // "3/7/24, 2:31 p.m. - ..."
-  static final RegExp _lineRegex = RegExp(
+  static final RegExp _androidLineRegex = RegExp(
     r'^(\d{1,2}\/\d{1,2}\/\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[aApP]\.?\s*[mM]\.?)?)\s*-\s*(.+)$',
+  );
+
+  // Regex for WhatsApp line start (iOS format): "[Date, Time] Body" or "[Date, Time] - Body"
+  // Supports formats:
+  // "[03/07/2024, 14:31:00] ..."
+  // "[3/7/24, 2:31:00 p. m.] ..."
+  static final RegExp _iosLineRegex = RegExp(
+    r'^\[(\d{1,2}\/\d{1,2}\/\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[aApP]\.?\s*[mM]\.?)?)\]\s*(?:-\s*)?(.+)$',
   );
 
   // Invisible bidi and control characters used by WhatsApp (e.g. U+2068 FSI, U+2069 PDI, U+200E, U+200F)
   static final RegExp _bidiRegex = RegExp(
     r'[\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b\ufeff]',
   );
+
+  /// Checks if a message text corresponds to a recognized WhatsApp system message.
+  static bool isWhatsAppSystemMessage(String text) {
+    final lower = text.toLowerCase();
+    return lower.contains('cifrad') ||
+        lower.contains('encrypt') ||
+        lower.contains('creaste') ||
+        lower.contains('creó') ||
+        lower.contains('created') ||
+        lower.contains('grupo') ||
+        lower.contains('group') ||
+        lower.contains('añadió') ||
+        lower.contains('added') ||
+        lower.contains('cambió') ||
+        lower.contains('changed') ||
+        lower.contains('eliminó') ||
+        lower.contains('deleted') ||
+        lower.contains('salió') ||
+        lower.contains('left') ||
+        lower.contains('seguridad') ||
+        lower.contains('security') ||
+        lower.contains('llamada') ||
+        lower.contains('call');
+  }
+
+  /// Determines whether the parsed chat corresponds to a legitimate WhatsApp chat.
+  static bool isValidWhatsAppChat(ParsedChatResult parsed) {
+    if (parsed.messages.isEmpty) return false;
+    // If it has participants who sent messages, it's a valid chat
+    if (parsed.participants.isNotEmpty) return true;
+    // Or if it only contains valid WhatsApp system events
+    return parsed.messages.any((m) => isWhatsAppSystemMessage(m.content));
+  }
 
   /// Extract chat title from file name
   /// e.g., "Chat de WhatsApp con En este grupo no se Admiten Ronalds 😅.txt" -> "En este grupo no se Admiten Ronalds 😅"
@@ -72,7 +113,9 @@ class WhatsAppParser {
 
     for (final line in lines) {
       final sanitizedLine = line.replaceAll(_bidiRegex, '');
-      final match = _lineRegex.firstMatch(sanitizedLine);
+      final match =
+          _androidLineRegex.firstMatch(sanitizedLine) ??
+          _iosLineRegex.firstMatch(sanitizedLine);
       if (match != null) {
         if (currentMsg != null) {
           rawMessages.add(currentMsg);
