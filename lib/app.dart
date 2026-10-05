@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_snackbar.dart';
 
 class ChatStatsApp extends StatelessWidget {
   const ChatStatsApp({super.key});
@@ -9,6 +10,7 @@ class ChatStatsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Chats Stats',
+      scaffoldMessengerKey: AppSnackBar.messengerKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
