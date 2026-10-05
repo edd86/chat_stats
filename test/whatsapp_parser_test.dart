@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chat_stats/features/chat_import/utils/whatsapp_parser.dart';
 import 'package:chat_stats/features/chat_dashboard/domain/models/message_analysis.dart';
+import 'package:chat_stats/features/chat_dashboard/domain/models/conversation_dynamics.dart';
 
 void main() {
   group('WhatsAppParser Unit Tests', () {
@@ -168,5 +169,71 @@ This is a shopping list:
         expect(WhatsAppParser.isValidWhatsAppChat(result), isTrue);
       },
     );
+
+    test('parseChatContent handles US date format MM/DD/YY accurately', () async {
+      const sampleText = '''
+04/28/24, 10:15 - Alice: Hello from US locale format!
+04/28/24, 10:16 - Bob: Hey Alice!
+''';
+
+      final result = await WhatsAppParser.parseChatContent(
+        rawFileName: 'WhatsApp Chat with Alice.txt',
+        fileContent: sampleText,
+      );
+
+      expect(result.messages.length, equals(2));
+      final dt = DateTime.fromMillisecondsSinceEpoch(result.messages.first.timestamp);
+      expect(dt.month, equals(4));
+      expect(dt.day, equals(28));
+    });
+
+    test('ConversationDynamics correctly calculates streaks', () {
+      final baseTs = DateTime(2024, 1, 1).millisecondsSinceEpoch;
+      final day2Ts = DateTime(2024, 1, 2).millisecondsSinceEpoch;
+      final day3Ts = DateTime(2024, 1, 3).millisecondsSinceEpoch;
+      final day5Ts = DateTime(2024, 1, 5).millisecondsSinceEpoch;
+
+      final stream = [
+        {'sender': 'Alice', 'timestamp': baseTs, 'content': 'Day 1'},
+        {'sender': 'Bob', 'timestamp': day2Ts, 'content': 'Day 2'},
+        {'sender': 'Alice', 'timestamp': day3Ts, 'content': 'Day 3'},
+        {'sender': 'Bob', 'timestamp': day5Ts, 'content': 'Day 5'},
+      ];
+
+      final dynamics = ConversationDynamics.process(stream);
+      expect(dynamics.longestStreakDays, equals(3));
+      expect(dynamics.currentStreakDays, equals(1));
+    });
+
+    test('MessageAnalysis correctly tracks night messages (El Noctámbulo)', () {
+      final nightTs = DateTime(2024, 1, 1, 3, 30).millisecondsSinceEpoch; // 03:30 AM
+      final dayTs = DateTime(2024, 1, 1, 14, 0).millisecondsSinceEpoch; // 02:00 PM
+
+      final messages = [
+        {
+          'sender': 'Búho',
+          'content': 'Despierto a las 3:30',
+          'char_count': 20,
+          'is_deleted': 0,
+          'is_media': 0,
+          'timestamp': nightTs,
+        },
+        {
+          'sender': 'Alondra',
+          'content': 'Buenas tardes',
+          'char_count': 13,
+          'is_deleted': 0,
+          'is_media': 0,
+          'timestamp': dayTs,
+        },
+      ];
+
+      final analysis = MessageAnalysis.process(messages, [], []);
+      expect(analysis.totalNightMessages, equals(1));
+      expect(analysis.nightMessagesByPerson['Búho'], equals(1));
+
+      final buho = analysis.participants.firstWhere((p) => p.name == 'Búho');
+      expect(buho.nightMessagesCount, equals(1));
+    });
   });
 }
