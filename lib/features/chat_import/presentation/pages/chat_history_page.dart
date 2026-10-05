@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/ad_service.dart';
+import '../../../../core/services/privacy_service.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../providers/chat_import_provider.dart';
 import '../widgets/chat_card.dart';
 import '../widgets/upload_dropzone.dart';
@@ -24,11 +26,37 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
     'dev.codedd.chat_stats/app_intent',
   );
 
+  bool _isLockEnabled = false;
+  bool _isAuthenticated = false;
+  bool _checkingLock = true;
+
   @override
   void initState() {
     super.initState();
     _initShareIntent();
     _initAppIntent();
+    _checkPrivacyLock();
+  }
+
+  Future<void> _checkPrivacyLock() async {
+    final enabled = await PrivacyService.instance.isLockEnabled();
+    if (mounted) {
+      setState(() {
+        _isLockEnabled = enabled;
+        _checkingLock = false;
+        _isAuthenticated = !enabled;
+      });
+      if (enabled) {
+        _authenticateUser();
+      }
+    }
+  }
+
+  Future<void> _authenticateUser() async {
+    final success = await PrivacyService.instance.authenticate();
+    if (mounted && success) {
+      setState(() => _isAuthenticated = true);
+    }
   }
 
   void _initAppIntent() {
@@ -103,36 +131,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
       if (next.status == ImportStatus.success && next.importedChatId != null) {
         final importedId = next.importedChatId!;
         ref.read(chatListProvider.notifier).refreshChats();
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outline_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '¡Chat importado con éxito!',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.primaryContainer,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        AppSnackBar.showSuccess('¡Chat importado con éxito!', context: context);
         ref.read(chatImportProvider.notifier).reset();
 
         // Display interstitial ad before transitioning to dashboard
@@ -145,37 +144,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
         );
       } else if (next.status == ImportStatus.error &&
           next.errorMessage != null) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    next.errorMessage!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.errorContainer,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        AppSnackBar.showError(next.errorMessage!, context: context);
         ref.read(chatImportProvider.notifier).reset();
       }
     });
@@ -195,15 +164,30 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isLockEnabled ? Icons.lock_rounded : Icons.lock_outline_rounded,
+              color: _isLockEnabled ? AppColors.primary : AppColors.onSurfaceVariant,
+            ),
+            tooltip: 'Seguridad y Privacidad 🛡️',
+            onPressed: () => _showPrivacySettingsSheet(context),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: UploadDropzone(
-                isLoading: importState.status == ImportStatus.loading,
+      body: _checkingLock
+          ? const Center(child: CircularProgressIndicator())
+          : (_isLockEnabled && !_isAuthenticated)
+              ? _buildLockScreen()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: UploadDropzone(
+                          isLoading: importState.status == ImportStatus.loading,
                 onTap: () {
                   ref.read(chatImportProvider.notifier).pickAndImportChatFile();
                 },
@@ -267,6 +251,149 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
         ),
       ),
       bottomNavigationBar: const AdBannerWidget(),
+    );
+  }
+
+  Widget _buildLockScreen() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.fingerprint_rounded,
+                size: 64,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Bloqueo de Seguridad Activado',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Confirma tu identidad para acceder a tus chats y estadísticas.',
+              style: TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 13,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: const Color(0xFF003915),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: _authenticateUser,
+              icon: const Icon(Icons.lock_open_rounded),
+              label: const Text(
+                'Desbloquear',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacySettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.outlineVariant,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(Icons.shield_outlined,
+                            color: AppColors.primary),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Seguridad y Privacidad',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Tus chats se procesan 100% en tu dispositivo y nunca se envían a ningún servidor externo.',
+                      style: TextStyle(
+                        color: AppColors.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Bloqueo con Huella / PIN',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text(
+                        'Solicitar autenticación al abrir la app',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: _isLockEnabled,
+                      activeTrackColor: AppColors.primary,
+                      onChanged: (val) async {
+                        await PrivacyService.instance.setLockEnabled(val);
+                        setState(() => _isLockEnabled = val);
+                        setModalState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
