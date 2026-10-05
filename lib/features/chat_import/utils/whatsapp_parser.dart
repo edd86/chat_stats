@@ -134,6 +134,23 @@ class WhatsAppParser {
       rawMessages.add(currentMsg);
     }
 
+    // Detect date format (MM/DD vs DD/MM) by sampling dates
+    bool isMonthFirst = false;
+    for (final raw in rawMessages.take(100)) {
+      final parts = raw.dateStr.split('/');
+      if (parts.length == 3) {
+        final p0 = int.tryParse(parts[0]) ?? 0;
+        final p1 = int.tryParse(parts[1]) ?? 0;
+        if (p0 > 12) {
+          isMonthFirst = false;
+          break;
+        } else if (p1 > 12) {
+          isMonthFirst = true;
+          break;
+        }
+      }
+    }
+
     final List<ChatMessageModel> messages = [];
     final Map<String, _ParticipantStats> participantMap = {};
 
@@ -144,7 +161,11 @@ class WhatsAppParser {
 
     for (final raw in rawMessages) {
       final parsedBody = _parseMessageBody(raw.body);
-      final timestamp = _parseDateTimeToTimestamp(raw.dateStr, raw.timeStr);
+      final timestamp = _parseDateTimeToTimestamp(
+        raw.dateStr,
+        raw.timeStr,
+        isMonthFirst: isMonthFirst,
+      );
 
       if (firstTimestamp == null || timestamp < firstTimestamp) {
         firstTimestamp = timestamp;
@@ -284,15 +305,35 @@ class WhatsAppParser {
     return text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
   }
 
-  static int _parseDateTimeToTimestamp(String dateStr, String timeStr) {
+  static int _parseDateTimeToTimestamp(
+    String dateStr,
+    String timeStr, {
+    bool isMonthFirst = false,
+  }) {
     try {
       final dateParts = dateStr.split('/');
       if (dateParts.length == 3) {
-        int day = int.parse(dateParts[0]);
-        int month = int.parse(dateParts[1]);
+        int part1 = int.parse(dateParts[0]);
+        int part2 = int.parse(dateParts[1]);
         int year = int.parse(dateParts[2]);
         if (year < 100) {
           year += 2000;
+        }
+
+        int day;
+        int month;
+        if (part1 > 12) {
+          day = part1;
+          month = part2;
+        } else if (part2 > 12) {
+          month = part1;
+          day = part2;
+        } else if (isMonthFirst) {
+          month = part1;
+          day = part2;
+        } else {
+          day = part1;
+          month = part2;
         }
 
         // Clean time string e.g. "14:31" or "2:31 p.m."
