@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/chat_import/presentation/pages/chat_history_page.dart';
 import '../../features/chat_dashboard/presentation/pages/chat_dashboard_page.dart';
 import '../../features/chat_dashboard/presentation/pages/chat_search_page.dart';
+import '../../features/chat_dashboard/presentation/pages/participant_versus_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -53,9 +54,25 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) {
         final chatIdStr = state.pathParameters['chatId'];
         final chatId = int.tryParse(chatIdStr ?? '') ?? 0;
+        final initialQuery = state.uri.queryParameters['query'];
         return CustomTransitionPage(
           key: state.pageKey,
-          child: ChatSearchPage(chatId: chatId),
+          child: ChatSearchPage(chatId: chatId, initialQuery: initialQuery),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+      },
+    ),
+    GoRoute(
+      path: '/versus/:chatId',
+      name: 'versus',
+      pageBuilder: (context, state) {
+        final chatIdStr = state.pathParameters['chatId'];
+        final chatId = int.tryParse(chatIdStr ?? '') ?? 0;
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: ParticipantVersusPage(chatId: chatId),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
