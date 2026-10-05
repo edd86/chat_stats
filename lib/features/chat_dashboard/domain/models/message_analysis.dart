@@ -29,6 +29,7 @@ class ParticipantAnalysis {
   final int wordsCount;
   final int mentionsCount;
   final int mentionsReceivedCount;
+  final int nightMessagesCount;
 
   const ParticipantAnalysis({
     required this.name,
@@ -47,6 +48,7 @@ class ParticipantAnalysis {
     this.wordsCount = 0,
     this.mentionsCount = 0,
     this.mentionsReceivedCount = 0,
+    this.nightMessagesCount = 0,
   });
 }
 
@@ -61,6 +63,8 @@ class MessageAnalysis {
   final int totalLinks;
   final int totalQuestions;
   final Map<String, int> mentionsReceived;
+  final Map<String, int> nightMessagesByPerson;
+  final int totalNightMessages;
 
   const MessageAnalysis({
     required this.topWords,
@@ -73,6 +77,8 @@ class MessageAnalysis {
     this.totalLinks = 0,
     this.totalQuestions = 0,
     this.mentionsReceived = const {},
+    this.nightMessagesByPerson = const {},
+    this.totalNightMessages = 0,
   });
 
   static MessageAnalysis empty() => const MessageAnalysis(
@@ -86,6 +92,8 @@ class MessageAnalysis {
     totalLinks: 0,
     totalQuestions: 0,
     mentionsReceived: {},
+    nightMessagesByPerson: {},
+    totalNightMessages: 0,
   );
 
   static MessageAnalysis process(
@@ -157,15 +165,27 @@ class MessageAnalysis {
     final Map<String, int> wordsCountByPerson = {};
     final Map<String, int> mentionsCountByPerson = {};
     final Map<String, int> mentionsReceivedByPerson = {};
+    final Map<String, int> nightCountByPerson = {};
 
     int totalLinks = 0;
     int totalQuestions = 0;
+    int totalNightMessages = 0;
 
     for (final row in messages) {
       final sender = row['sender'] as String;
       final content = row['content'] as String;
       final charCount = row['char_count'] as int;
       final isDeleted = (row['is_deleted'] as int?) == 1;
+      final ts = row['timestamp'] as int?;
+
+      // Night messages (00:00 - 05:59)
+      if (ts != null) {
+        final dt = DateTime.fromMillisecondsSinceEpoch(ts);
+        if (dt.hour >= 0 && dt.hour < 6) {
+          totalNightMessages++;
+          nightCountByPerson[sender] = (nightCountByPerson[sender] ?? 0) + 1;
+        }
+      }
 
       // Links
       if (linkPattern.hasMatch(content)) {
@@ -334,6 +354,7 @@ class MessageAnalysis {
           wordsCount: wordsCountByPerson[sender] ?? 0,
           mentionsCount: mentionsCountByPerson[sender] ?? 0,
           mentionsReceivedCount: mentionsReceivedByPerson[sender] ?? 0,
+          nightMessagesCount: nightCountByPerson[sender] ?? 0,
         ),
       );
     }
@@ -355,6 +376,8 @@ class MessageAnalysis {
       totalLinks: totalLinks,
       totalQuestions: totalQuestions,
       mentionsReceived: mentionsReceivedByPerson,
+      nightMessagesByPerson: nightCountByPerson,
+      totalNightMessages: totalNightMessages,
     );
   }
 }

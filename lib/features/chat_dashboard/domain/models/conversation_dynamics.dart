@@ -58,6 +58,8 @@ class ConversationDynamics {
   final int totalDays;
   final ChatSilence? longestSilence;
   final List<ParticipantResponseTime> responseTimes;
+  final int longestStreakDays;
+  final int currentStreakDays;
 
   const ConversationDynamics({
     required this.initiators,
@@ -67,6 +69,8 @@ class ConversationDynamics {
     required this.totalDays,
     this.longestSilence,
     this.responseTimes = const [],
+    this.longestStreakDays = 0,
+    this.currentStreakDays = 0,
   });
 
   static ConversationDynamics empty() => const ConversationDynamics(
@@ -77,6 +81,8 @@ class ConversationDynamics {
     totalDays: 0,
     longestSilence: null,
     responseTimes: [],
+    longestStreakDays: 0,
+    currentStreakDays: 0,
   );
 
   static ConversationDynamics process(List<Map<String, dynamic>> stream) {
@@ -107,6 +113,7 @@ class ConversationDynamics {
 
     // Track first message per day for initiators
     final seenDays = <String, bool>{};
+    final activeDaysSet = <DateTime>{};
 
     for (int i = 0; i < stream.length; i++) {
       final row = stream[i];
@@ -114,6 +121,7 @@ class ConversationDynamics {
       final ts = row['timestamp'] as int;
       final dt = DateTime.fromMillisecondsSinceEpoch(ts);
       final dayKey = '${dt.year}-${dt.month}-${dt.day}';
+      activeDaysSet.add(DateTime(dt.year, dt.month, dt.day));
 
       // Initiator: first message of each day
       if (seenDays[dayKey] != true) {
@@ -246,6 +254,23 @@ class ConversationDynamics {
     });
     responseList.sort((a, b) => b.count.compareTo(a.count));
 
+    // Calculate conversation streaks (consecutive active days)
+    final sortedDays = activeDaysSet.toList()..sort();
+    int longestStreak = sortedDays.isNotEmpty ? 1 : 0;
+    int streakRunning = sortedDays.isNotEmpty ? 1 : 0;
+
+    for (int i = 1; i < sortedDays.length; i++) {
+      final diff = sortedDays[i].difference(sortedDays[i - 1]).inDays;
+      if (diff == 1) {
+        streakRunning++;
+        if (streakRunning > longestStreak) {
+          longestStreak = streakRunning;
+        }
+      } else if (diff > 1) {
+        streakRunning = 1;
+      }
+    }
+
     return ConversationDynamics(
       initiators: initiators,
       responseRates: responseList,
@@ -254,6 +279,8 @@ class ConversationDynamics {
       totalDays: totalDays,
       longestSilence: longestSilence,
       responseTimes: responseTimes,
+      longestStreakDays: longestStreak,
+      currentStreakDays: streakRunning,
     );
   }
 }
