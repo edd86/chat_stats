@@ -15,10 +15,10 @@ class HourlyChart extends StatelessWidget {
 
     final Map<int, int> hourMap = {for (int i = 0; i < 24; i++) i: 0};
     for (final row in hourlyData) {
-      final hourStr = row['hour'] as String?;
+      final hourRaw = row['hour'];
       final count = row['count'] as int? ?? 0;
-      if (hourStr != null) {
-        final hourInt = int.tryParse(hourStr);
+      if (hourRaw != null) {
+        final hourInt = hourRaw is int ? hourRaw : int.tryParse(hourRaw.toString());
         if (hourInt != null && hourInt >= 0 && hourInt < 24) {
           hourMap[hourInt] = count;
         }

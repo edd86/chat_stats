@@ -61,9 +61,44 @@ class SocialRolesSection extends StatelessWidget {
         ? sortedMentions.first
         : null;
 
+    // 4. Noctámbulo (Night Owl)
+    final sortedByNight = List<ParticipantAnalysis>.from(
+      analysis.participants,
+    )..sort((a, b) => b.nightMessagesCount.compareTo(a.nightMessagesCount));
+    final topNightOwl =
+        sortedByNight.isNotEmpty && sortedByNight.first.nightMessagesCount > 0
+            ? sortedByNight.first
+            : null;
+
+    // 5. Monologuista (Consecutive messages)
+    final sortedConsecutive = dynamics.consecutiveMax.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topMonologuist =
+        sortedConsecutive.isNotEmpty && sortedConsecutive.first.value > 1
+            ? sortedConsecutive.first
+            : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Streaks Card (if any active days)
+        if (dynamics.longestStreakDays > 0) ...[
+          Text(
+            'RACHA DE CONVERSACIÓN',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _StreakCard(
+            longestStreak: dynamics.longestStreakDays,
+            currentStreak: dynamics.currentStreakDays,
+          ),
+          const SizedBox(height: 24),
+        ],
+
         // Writer Card
         if (topWriterPerson != null) ...[
           Text(
@@ -99,57 +134,171 @@ class SocialRolesSection extends StatelessWidget {
           const SizedBox(height: 24),
         ],
 
-        // Curiosities Row: Questions & Mentions
-        if (topQuestioner != null || topMentioned != null) ...[
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
+        // Curiosities & Roles Grid
+        Text(
+          'ROLES Y CURIOSIDADES DEL CHAT',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 600;
 
-              final questionWidget = topQuestioner != null
-                  ? _MiniInsightTile(
-                      icon: Icons.help_outline_rounded,
-                      iconColor: AppColors.secondary,
-                      title: 'EL MÁS CURIOSO',
-                      name: topQuestioner.name,
-                      stat: '${topQuestioner.questionCount} preguntas',
-                      subtitle:
-                          '${topQuestioner.textCount > 0 ? (topQuestioner.questionCount / topQuestioner.textCount * 100).toStringAsFixed(0) : 0}% de sus mensajes',
-                    )
-                  : const SizedBox();
+            final tiles = <Widget>[
+              if (topNightOwl != null)
+                _MiniInsightTile(
+                  icon: Icons.nightlight_round,
+                  iconColor: const Color(0xFFD68BF9),
+                  title: 'EL NOCTÁMBULO 🦉',
+                  name: topNightOwl.name,
+                  stat: '${topNightOwl.nightMessagesCount} msgs',
+                  subtitle: 'De madrugada (00:00 - 06:00)',
+                ),
+              if (topMonologuist != null)
+                _MiniInsightTile(
+                  icon: Icons.record_voice_over_rounded,
+                  iconColor: AppColors.tertiary,
+                  title: 'EL MONOLOGUISTA 🗣️',
+                  name: topMonologuist.key,
+                  stat: '${topMonologuist.value} seguidos',
+                  subtitle: 'Mayor racha ininterrumpida',
+                ),
+              if (topQuestioner != null)
+                _MiniInsightTile(
+                  icon: Icons.help_outline_rounded,
+                  iconColor: AppColors.secondary,
+                  title: 'EL MÁS CURIOSO ❓',
+                  name: topQuestioner.name,
+                  stat: '${topQuestioner.questionCount} preguntas',
+                  subtitle:
+                      '${topQuestioner.textCount > 0 ? (topQuestioner.questionCount / topQuestioner.textCount * 100).toStringAsFixed(0) : 0}% de sus textos',
+                ),
+              if (topMentioned != null)
+                _MiniInsightTile(
+                  icon: Icons.alternate_email_rounded,
+                  iconColor: AppColors.primary,
+                  title: 'EL MÁS POPULAR 📣',
+                  name: topMentioned.key,
+                  stat: '${topMentioned.value} menciones',
+                  subtitle: 'La persona más arrobada',
+                ),
+            ];
 
-              final mentionWidget = topMentioned != null
-                  ? _MiniInsightTile(
-                      icon: Icons.alternate_email_rounded,
-                      iconColor: AppColors.primary,
-                      title: 'EL MÁS POPULAR / MENCIONADO',
-                      name: topMentioned.key,
-                      stat: '${topMentioned.value} menciones',
-                      subtitle: 'La persona más arrobada del chat',
-                    )
-                  : const SizedBox();
+            if (tiles.isEmpty) return const SizedBox();
 
-              if (isWide && topQuestioner != null && topMentioned != null) {
-                return Row(
-                  children: [
-                    Expanded(child: questionWidget),
-                    const SizedBox(width: 12),
-                    Expanded(child: mentionWidget),
+            if (isWide) {
+              return GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.8,
+                children: tiles,
+              );
+            } else {
+              return Column(
+                children: [
+                  for (int i = 0; i < tiles.length; i++) ...[
+                    tiles[i],
+                    if (i < tiles.length - 1) const SizedBox(height: 12),
                   ],
-                );
-              } else {
-                return Column(
+                ],
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _StreakCard extends StatelessWidget {
+  final int longestStreak;
+  final int currentStreak;
+
+  const _StreakCard({
+    required this.longestStreak,
+    required this.currentStreak,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.orange.withValues(alpha: 0.12),
+            AppColors.surfaceContainer,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Text('🔥', style: TextStyle(fontSize: 26)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (topQuestioner != null) questionWidget,
-                    if (topQuestioner != null && topMentioned != null)
-                      const SizedBox(height: 12),
-                    if (topMentioned != null) mentionWidget,
+                    Text(
+                      'RÉCORD: $longestStreak DÍAS SEGUIDOS',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    if (currentStreak > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Activa: $currentStreak d',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                   ],
-                );
-              }
-            },
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Racha ininterrumpida de mensajes',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 }

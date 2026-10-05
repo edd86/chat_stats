@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../chat_import/domain/models/chat_model.dart';
 import '../../domain/models/conversation_dynamics.dart';
@@ -50,6 +55,8 @@ class _ChatWrappedDialogState extends State<ChatWrappedDialog>
   final int _totalStories = 5;
   int _currentIndex = 0;
   late AnimationController _animController;
+  final GlobalKey _storyKey = GlobalKey();
+  bool _isSharing = false;
 
   @override
   void initState() {
@@ -103,6 +110,42 @@ class _ChatWrappedDialogState extends State<ChatWrappedDialog>
     }
   }
 
+  Future<void> _shareCurrentStory() async {
+    _animController.stop();
+    setState(() => _isSharing = true);
+    try {
+      final boundary =
+          _storyKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary != null) {
+        final image = await boundary.toImage(pixelRatio: 2.5);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData != null) {
+          final bytes = byteData.buffer.asUint8List();
+          final tempDir = await getTemporaryDirectory();
+          final file = File(
+            '${tempDir.path}/chat_wrapped_${widget.chat.id}_story_${_currentIndex + 1}.png',
+          );
+          await file.writeAsBytes(bytes);
+
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(file.path)],
+              text:
+                  '¡Mira las estadísticas de "${widget.chat.name}" en Chat Stats! 📊🔥',
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error sharing story image: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+        _animController.forward();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,8 +169,13 @@ class _ChatWrappedDialogState extends State<ChatWrappedDialog>
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 children: [
-                  // Story Pages Content
-                  Positioned.fill(child: _buildStoryContent(_currentIndex)),
+                  // Story Pages Content (Captured for sharing)
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      key: _storyKey,
+                      child: _buildStoryContent(_currentIndex),
+                    ),
+                  ),
 
                   // Tap detection areas for Story Navigation
                   Positioned.fill(
@@ -195,16 +243,52 @@ class _ChatWrappedDialogState extends State<ChatWrappedDialog>
                     ),
                   ),
 
+                  // Share Button
+                  Positioned(
+                    top: 26,
+                    right: 60,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        tooltip: 'Compartir Historia',
+                        onPressed: _isSharing ? null : _shareCurrentStory,
+                        icon: _isSharing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.share_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                      ),
+                    ),
+                  ),
+
                   // Close Button
                   Positioned(
-                    top: 28,
-                    right: 16,
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 26,
+                    top: 26,
+                    right: 14,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),

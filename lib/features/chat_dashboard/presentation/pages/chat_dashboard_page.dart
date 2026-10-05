@@ -84,6 +84,17 @@ class ChatDashboardPage extends ConsumerWidget {
           error: (_, _) => const Text('Error'),
         ),
         actions: [
+          // Versus Button (Cara a Cara)
+          IconButton(
+            icon: const Icon(
+              Icons.compare_arrows_rounded,
+              color: AppColors.secondary,
+            ),
+            tooltip: 'Duelo: Cara a Cara ⚔️',
+            onPressed: () {
+              context.push('/versus/$chatId');
+            },
+          ),
           // Wrapped Story Button
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -159,23 +170,50 @@ class ChatDashboardPage extends ConsumerWidget {
             return const Center(child: Text('Chat no encontrado localmente.'));
           }
 
+          final dateFilter = ref.watch(dashboardDateFilterProvider);
+          final summaryAsync = ref.watch(chatFilteredSummaryProvider(chatId));
+
+          final isFiltered = dateFilter.type != DashboardDateFilterType.all;
+          final sum = summaryAsync.value;
+
+          final totalMsgs = isFiltered
+              ? (sum?['total_messages'] as int? ?? 0)
+              : chat.totalMessages;
+          final totalMed = isFiltered
+              ? (sum?['total_media'] as int? ?? 0)
+              : chat.totalMedia;
+          final totalWrd = isFiltered
+              ? (sum?['total_words'] as int? ?? 0)
+              : chat.totalWords;
+          final partCount = isFiltered
+              ? (sum?['participant_count'] as int? ?? chat.participantCount)
+              : chat.participantCount;
+          final firstTime = isFiltered
+              ? (sum?['first_message_time'] as int? ?? chat.firstMessageTime)
+              : chat.firstMessageTime;
+          final lastTime = isFiltered
+              ? (sum?['last_message_time'] as int? ?? chat.lastMessageTime)
+              : chat.lastMessageTime;
+
           final analysis = analysisAsync.value;
           int totalDays = 1;
-          if (chat.firstMessageTime != null && chat.lastMessageTime != null) {
-            final d = DateTime.fromMillisecondsSinceEpoch(chat.lastMessageTime!)
-                .difference(
-                  DateTime.fromMillisecondsSinceEpoch(chat.firstMessageTime!),
-                )
+          if (firstTime != null && lastTime != null) {
+            final d = DateTime.fromMillisecondsSinceEpoch(lastTime)
+                .difference(DateTime.fromMillisecondsSinceEpoch(firstTime))
                 .inDays;
             if (d > 0) totalDays = d;
           }
-          final pace = (chat.totalMessages / totalDays).toStringAsFixed(1);
+          final pace = (totalMsgs / totalDays).toStringAsFixed(1);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Date Range Filter Bar
+                _buildDateFilterRow(context, ref, dateFilter),
+                const SizedBox(height: 18),
+
                 // KPI Grid (8 Cards)
                 LayoutBuilder(
                   builder: (context, constraints) {
@@ -190,27 +228,24 @@ class ChatDashboardPage extends ConsumerWidget {
                       children: [
                         KpiCard(
                           title: 'Mensajes',
-                          value: '${chat.totalMessages}',
+                          value: '$totalMsgs',
                           icon: Icons.message_outlined,
                           color: AppColors.primary,
-                          subtitle: 'Total intercambiados',
+                          subtitle: isFiltered ? 'En período' : 'Total intercambiados',
                         ),
                         KpiCard(
                           title: 'Usuarios',
-                          value: '${chat.participantCount}',
+                          value: '$partCount',
                           icon: Icons.people_outline,
                           color: AppColors.secondary,
-                          subtitle: 'Participantes',
+                          subtitle: isFiltered ? 'Activos en período' : 'Participantes',
                         ),
                         KpiCard(
                           title: 'Antigüedad',
-                          value: _formatChatSpan(
-                            chat.firstMessageTime,
-                            chat.lastMessageTime,
-                          ),
+                          value: _formatChatSpan(firstTime, lastTime),
                           icon: Icons.date_range_outlined,
                           color: AppColors.tertiary,
-                          subtitle: 'Duración total',
+                          subtitle: isFiltered ? 'Rango filtrado' : 'Duración total',
                         ),
                         KpiCard(
                           title: 'Ritmo Diario',
@@ -221,14 +256,14 @@ class ChatDashboardPage extends ConsumerWidget {
                         ),
                         KpiCard(
                           title: 'Multimedia',
-                          value: '${chat.totalMedia}',
+                          value: '$totalMed',
                           icon: Icons.perm_media_outlined,
                           color: AppColors.tertiary,
                           subtitle: 'Archivos adjuntos',
                         ),
                         KpiCard(
                           title: 'Palabras',
-                          value: '${chat.totalWords}',
+                          value: '$totalWrd',
                           icon: Icons.article_outlined,
                           color: AppColors.secondary,
                           subtitle: 'Total texto',
@@ -465,7 +500,7 @@ class ChatDashboardPage extends ConsumerWidget {
                 const SizedBox(height: 28),
                 analysisAsync.when(
                   data: (analysis) =>
-                      MessageAnalysisSection(analysis: analysis),
+                      MessageAnalysisSection(analysis: analysis, chatId: chatId),
                   loading: () => const SizedBox(),
                   error: (_, _) => const SizedBox(),
                 ),
@@ -479,6 +514,164 @@ class ChatDashboardPage extends ConsumerWidget {
         error: (err, _) => Center(child: Text('Error: $err')),
       ),
       bottomNavigationBar: const AdBannerWidget(),
+    );
+  }
+
+  Widget _buildDateFilterRow(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardDateFilter currentFilter,
+  ) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _filterChip(
+            context,
+            ref,
+            label: 'Todo',
+            type: DashboardDateFilterType.all,
+            isSelected: currentFilter.type == DashboardDateFilterType.all,
+          ),
+          const SizedBox(width: 8),
+          _filterChip(
+            context,
+            ref,
+            label: 'Últimos 30d',
+            type: DashboardDateFilterType.last30Days,
+            isSelected: currentFilter.type == DashboardDateFilterType.last30Days,
+          ),
+          const SizedBox(width: 8),
+          _filterChip(
+            context,
+            ref,
+            label: 'Últimos 90d',
+            type: DashboardDateFilterType.last90Days,
+            isSelected: currentFilter.type == DashboardDateFilterType.last90Days,
+          ),
+          const SizedBox(width: 8),
+          _filterChip(
+            context,
+            ref,
+            label: 'Este año',
+            type: DashboardDateFilterType.thisYear,
+            isSelected: currentFilter.type == DashboardDateFilterType.thisYear,
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () async {
+              final range = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(2010),
+                lastDate: DateTime.now(),
+                initialDateRange: currentFilter.customStart != null &&
+                        currentFilter.customEnd != null
+                    ? DateTimeRange(
+                        start: currentFilter.customStart!,
+                        end: currentFilter.customEnd!,
+                      )
+                    : null,
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: Theme.of(context).colorScheme.copyWith(
+                        primary: AppColors.primary,
+                        onPrimary: Colors.black,
+                        surface: AppColors.surfaceContainer,
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (range != null) {
+                ref.read(dashboardDateFilterProvider.notifier).setFilter(
+                      DashboardDateFilterType.custom,
+                      customStart: range.start,
+                      customEnd: range.end,
+                    );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: currentFilter.type == DashboardDateFilterType.custom
+                    ? AppColors.primary
+                    : AppColors.surfaceContainer,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: currentFilter.type == DashboardDateFilterType.custom
+                      ? AppColors.primary
+                      : AppColors.outlineVariant,
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_month_outlined,
+                    size: 14,
+                    color: currentFilter.type == DashboardDateFilterType.custom
+                        ? Colors.black
+                        : AppColors.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    currentFilter.type == DashboardDateFilterType.custom &&
+                            currentFilter.customStart != null &&
+                            currentFilter.customEnd != null
+                        ? '${currentFilter.customStart!.day}/${currentFilter.customStart!.month} - ${currentFilter.customEnd!.day}/${currentFilter.customEnd!.month}'
+                        : 'Personalizado',
+                    style: TextStyle(
+                      color: currentFilter.type == DashboardDateFilterType.custom
+                          ? Colors.black
+                          : AppColors.onSurface,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    BuildContext context,
+    WidgetRef ref, {
+    required String label,
+    required DashboardDateFilterType type,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        ref.read(dashboardDateFilterProvider.notifier).setFilter(type);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : AppColors.onSurface,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

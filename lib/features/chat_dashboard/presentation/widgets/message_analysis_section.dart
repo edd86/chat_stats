@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/message_analysis.dart';
 
 class MessageAnalysisSection extends StatelessWidget {
   final MessageAnalysis analysis;
+  final int? chatId;
 
-  const MessageAnalysisSection({super.key, required this.analysis});
+  const MessageAnalysisSection({
+    super.key,
+    required this.analysis,
+    this.chatId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +26,7 @@ class MessageAnalysisSection extends StatelessWidget {
         if (analysis.topWords.isNotEmpty) ...[
           _SectionTitle(title: 'PALABRAS MÁS USADAS (TOP 10)'),
           const SizedBox(height: 12),
-          _TopWordsGrid(words: analysis.topWords),
+          _TopWordsGrid(words: analysis.topWords, chatId: chatId),
           const SizedBox(height: 24),
         ],
 
@@ -173,8 +179,9 @@ class _MiniKpi extends StatelessWidget {
 
 class _TopWordsGrid extends StatelessWidget {
   final List<MessageWord> words;
+  final int? chatId;
 
-  const _TopWordsGrid({required this.words});
+  const _TopWordsGrid({required this.words, this.chatId});
 
   @override
   Widget build(BuildContext context) {
@@ -198,53 +205,104 @@ class _TopWordsGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.outlineVariant, width: 0.5),
       ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 8,
-        children: filteredWords.asMap().entries.map((entry) {
-          final idx = entry.key;
-          final word = entry.value;
-          final barPct = maxCount > 0 ? word.count / maxCount : 0.0;
-          final fontSize = 11.0 + (barPct * 4);
-
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (chatId != null) ...[
+            Row(
               children: [
-                Text(
-                  '${idx + 1}.',
-                  style: TextStyle(
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 10,
-                  ),
+                const Icon(
+                  Icons.touch_app_outlined,
+                  size: 13,
+                  color: AppColors.primary,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 5),
                 Text(
-                  word.word,
+                  'Toca cualquier palabra para ver sus mensajes',
                   style: TextStyle(
-                    color: AppColors.onSurface,
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${word.count}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
-          );
-        }).toList(),
+            const SizedBox(height: 10),
+          ],
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: filteredWords.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final word = entry.value;
+              final barPct = maxCount > 0 ? word.count / maxCount : 0.0;
+              final fontSize = 11.0 + (barPct * 3.5);
+
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: chatId != null
+                      ? () => context.push(
+                            '/search/$chatId?query=${Uri.encodeComponent(word.word)}',
+                          )
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${idx + 1}.',
+                          style: const TextStyle(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 10,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          word.word,
+                          style: TextStyle(
+                            color: AppColors.onSurface,
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${word.count}',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (chatId != null) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.search,
+                            size: 11,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
