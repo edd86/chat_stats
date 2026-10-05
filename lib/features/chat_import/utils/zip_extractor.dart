@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:archive/archive.dart';
 
 class ExtractedChatContent {
@@ -19,6 +19,16 @@ class ZipExtractor {
     required Uint8List bytes,
     required String rawFileName,
   }) async {
+    return compute(_extractInBackground, {
+      'bytes': bytes,
+      'fileName': rawFileName,
+    });
+  }
+
+  static ExtractedChatContent _extractInBackground(Map<String, dynamic> data) {
+    final Uint8List bytes = data['bytes'] as Uint8List;
+    final String rawFileName = data['fileName'] as String;
+
     final bool isZip = _isZipFile(bytes, rawFileName);
 
     if (!isZip) {
