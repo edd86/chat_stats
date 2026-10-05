@@ -179,65 +179,186 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<List<ParticipantModel>> getParticipantsByChatId(int chatId) async {
+  Future<List<ParticipantModel>> getParticipantsByChatId(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
-    final result = await db.query(
-      'participants',
-      where: 'chat_id = ?',
-      whereArgs: [chatId],
-      orderBy: 'message_count DESC',
-    );
-    return result.map((json) => ParticipantModel.fromMap(json)).toList();
+    if (startTimestamp == null && endTimestamp == null) {
+      final result = await db.query(
+        'participants',
+        where: 'chat_id = ?',
+        whereArgs: [chatId],
+        orderBy: 'message_count DESC',
+      );
+      return result.map((json) => ParticipantModel.fromMap(json)).toList();
+    } else {
+      final start = startTimestamp ?? 0;
+      final end = endTimestamp ?? DateTime.now().millisecondsSinceEpoch;
+      final res = await db.rawQuery(
+        '''
+        SELECT sender as name,
+               COUNT(*) as message_count,
+               SUM(CASE WHEN is_media = 1 THEN 1 ELSE 0 END) as media_count,
+               SUM(word_count) as word_count
+        FROM messages
+        WHERE chat_id = ? AND is_system = 0 AND timestamp >= ? AND timestamp <= ?
+        GROUP BY sender
+        ORDER BY message_count DESC
+      ''',
+        [chatId, start, end],
+      );
+      return res
+          .map(
+            (r) => ParticipantModel(
+              chatId: chatId,
+              name: r['name'] as String,
+              messageCount: r['message_count'] as int,
+              mediaCount: (r['media_count'] as num?)?.toInt() ?? 0,
+              wordCount: (r['word_count'] as num?)?.toInt() ?? 0,
+            ),
+          )
+          .toList();
+    }
   }
 
-  Future<List<Map<String, dynamic>>> getDailyActivity(int chatId) async {
+  Future<Map<String, dynamic>> getChatStatsSummary(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final start = startTimestamp ?? 0;
+    final end = endTimestamp ?? DateTime.now().millisecondsSinceEpoch;
+    final res = await db.rawQuery(
+      '''
+      SELECT 
+        COUNT(*) as total_messages,
+        SUM(CASE WHEN is_media = 1 THEN 1 ELSE 0 END) as total_media,
+        SUM(word_count) as total_words,
+        COUNT(DISTINCT CASE WHEN is_system = 0 THEN sender END) as participant_count,
+        MIN(timestamp) as first_message_time,
+        MAX(timestamp) as last_message_time
+      FROM messages
+      WHERE chat_id = ? AND timestamp >= ? AND timestamp <= ?
+    ''',
+      [chatId, start, end],
+    );
+    if (res.isNotEmpty) {
+      return res.first;
+    }
+    return {
+      'total_messages': 0,
+      'total_media': 0,
+      'total_words': 0,
+      'participant_count': 0,
+      'first_message_time': null,
+      'last_message_time': null,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> getDailyActivity(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
+    final db = await instance.database;
+    if (startTimestamp == null && endTimestamp == null) {
+      return await db.rawQuery(
+        '''
+        SELECT date_str, COUNT(*) as count 
+        FROM messages 
+        WHERE chat_id = ? AND is_system = 0
+        GROUP BY date_str 
+        ORDER BY timestamp ASC
+      ''',
+        [chatId],
+      );
+    }
+    final start = startTimestamp ?? 0;
+    final end = endTimestamp ?? DateTime.now().millisecondsSinceEpoch;
     return await db.rawQuery(
       '''
       SELECT date_str, COUNT(*) as count 
       FROM messages 
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 AND timestamp >= ? AND timestamp <= ?
       GROUP BY date_str 
       ORDER BY timestamp ASC
     ''',
-      [chatId],
+      [chatId, start, end],
     );
   }
 
-  Future<Map<String, dynamic>?> getActiveDayRecord(int chatId) async {
+  Future<Map<String, dynamic>?> getActiveDayRecord(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     final res = await db.rawQuery(
       '''
       SELECT date_str, COUNT(*) as count 
       FROM messages 
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       GROUP BY date_str 
       ORDER BY count DESC 
       LIMIT 1
     ''',
-      [chatId],
+      args,
     );
     if (res.isNotEmpty) return res.first;
     return null;
   }
 
-  Future<List<Map<String, dynamic>>> getHourlyDistribution(int chatId) async {
+  Future<List<Map<String, dynamic>>> getHourlyDistribution(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
-    // Extract hour from time_str (HH:mm format)
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
-      SELECT SUBSTR(time_str, 1, 2) as hour, COUNT(*) as count
+      SELECT CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, COUNT(*) as count
       FROM messages
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       GROUP BY hour
       ORDER BY hour ASC
     ''',
-      [chatId],
+      args,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getActivityHeatmap(int chatId) async {
+  Future<List<Map<String, dynamic>>> getActivityHeatmap(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
       SELECT 
@@ -245,10 +366,10 @@ class DatabaseHelper {
         CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour,
         COUNT(*) as count
       FROM messages
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       GROUP BY day_of_week, hour
     ''',
-      [chatId],
+      args,
     );
   }
 
@@ -267,48 +388,96 @@ class DatabaseHelper {
     return result.map((json) => ChatMessageModel.fromMap(json)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getConversationStream(int chatId) async {
+  Future<List<Map<String, dynamic>>> getConversationStream(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
       SELECT timestamp, sender, content
       FROM messages
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       ORDER BY timestamp ASC
     ''',
-      [chatId],
+      args,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getMessagesForAnalysis(int chatId) async {
+  Future<List<Map<String, dynamic>>> getMessagesForAnalysis(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
-      SELECT sender, content, char_count, is_media, is_edited, is_deleted
+      SELECT sender, content, char_count, is_media, is_edited, is_deleted, timestamp
       FROM messages
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       ORDER BY timestamp ASC
     ''',
-      [chatId],
+      args,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getEditedStats(int chatId) async {
+  Future<List<Map<String, dynamic>>> getEditedStats(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
       SELECT sender, COUNT(*) as count
       FROM messages
-      WHERE chat_id = ? AND is_system = 0 AND is_edited = 1
+      WHERE chat_id = ? AND is_system = 0 AND is_edited = 1 $whereExtra
       GROUP BY sender
       ORDER BY count DESC
     ''',
-      [chatId],
+      args,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getContentStats(int chatId) async {
+  Future<List<Map<String, dynamic>>> getContentStats(
+    int chatId, {
+    int? startTimestamp,
+    int? endTimestamp,
+  }) async {
     final db = await instance.database;
+    final whereExtra = (startTimestamp != null && endTimestamp != null)
+        ? 'AND timestamp >= ? AND timestamp <= ?'
+        : '';
+    final args = [chatId];
+    if (startTimestamp != null && endTimestamp != null) {
+      args.add(startTimestamp);
+      args.add(endTimestamp);
+    }
     return await db.rawQuery(
       '''
       SELECT sender,
@@ -316,11 +485,11 @@ class DatabaseHelper {
         SUM(CASE WHEN is_media = 0 THEN 1 ELSE 0 END) as text_count,
         COUNT(*) as total
       FROM messages
-      WHERE chat_id = ? AND is_system = 0
+      WHERE chat_id = ? AND is_system = 0 $whereExtra
       GROUP BY sender
       ORDER BY total DESC
     ''',
-      [chatId],
+      args,
     );
   }
 
