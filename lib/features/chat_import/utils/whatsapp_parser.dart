@@ -297,7 +297,8 @@ class WhatsAppParser {
     return lower.contains('se eliminó este mensaje.') ||
         lower.contains('<este mensaje fue eliminado>') ||
         lower.contains('<se borró este mensaje>') ||
-        lower.contains('<this message was deleted>');
+        lower.contains('<this message was deleted>') ||
+        lower.contains('eliminaste este mensaje');
   }
 
   static int _calculateWordCount(String text) {
