@@ -1,8 +1,12 @@
 flutter_native_splash:
-  color: "#000000"
+  color: "#9ad2a9"
   image: assets/logo/splash_screen.png
   android: true
   ios: true
-  android_gravity: fill
-  ios_content_mode: scaleToFill
+  android_gravity: center
+  ios_content_mode: center
   fullscreen: true
+  android_12:
+    color: "#9ad2a9"
+    image: assets/logo/icono.png
+
