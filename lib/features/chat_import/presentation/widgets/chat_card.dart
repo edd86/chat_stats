@@ -81,8 +81,10 @@ class ChatCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                alignment: WrapAlignment.spaceBetween,
                 children: [
                   _MetricBadge(
                     icon: Icons.message_outlined,

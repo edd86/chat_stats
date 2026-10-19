@@ -157,11 +157,17 @@ class UploadDropzone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+
     return InkWell(
       onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 16 : 24,
+          vertical: isCompact ? 18 : 24,
+        ),
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(16),
@@ -191,22 +197,22 @@ class UploadDropzone extends StatelessWidget {
               ),
             ] else ...[
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(isCompact ? 12 : 16),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.cloud_upload_outlined,
-                  size: 40,
+                  size: isCompact ? 32 : 40,
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: isCompact ? 12 : 16),
               Text(
                 'Seleccionar archivo o exportar desde WhatsApp',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 18,
+                  fontSize: isCompact ? 16 : 18,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,

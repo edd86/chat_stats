@@ -29,6 +29,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
   bool _isLockEnabled = false;
   bool _isAuthenticated = false;
   bool _checkingLock = true;
+  bool _isNavigatingToDashboard = false;
 
   @override
   void initState() {
@@ -115,6 +116,29 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
     }
   }
 
+  void _openChatDashboard(int chatId) {
+    if (_isNavigatingToDashboard) return;
+    _isNavigatingToDashboard = true;
+
+    AdService.instance.showInterstitialAd(
+      onAdDismissed: () {
+        if (!mounted) {
+          _isNavigatingToDashboard = false;
+          return;
+        }
+        context.push('/dashboard/$chatId').whenComplete(() {
+          if (mounted) {
+            setState(() {
+              _isNavigatingToDashboard = false;
+            });
+          } else {
+            _isNavigatingToDashboard = false;
+          }
+        });
+      },
+    );
+  }
+
   @override
   void dispose() {
     _intentDataStreamSubscription.cancel();
@@ -135,13 +159,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
         ref.read(chatImportProvider.notifier).reset();
 
         // Display interstitial ad before transitioning to dashboard
-        AdService.instance.showInterstitialAd(
-          onAdDismissed: () {
-            if (context.mounted) {
-              context.push('/dashboard/$importedId');
-            }
-          },
-        );
+        _openChatDashboard(importedId);
       } else if (next.status == ImportStatus.error &&
           next.errorMessage != null) {
         AppSnackBar.showError(next.errorMessage!, context: context);
@@ -155,11 +173,15 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
           children: [
             const Icon(Icons.analytics_outlined, color: AppColors.primary),
             const SizedBox(width: 10),
-            Text(
-              'Estadísticas de WhatsApp',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'Estadísticas de WhatsApp',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -168,7 +190,9 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
           IconButton(
             icon: Icon(
               _isLockEnabled ? Icons.lock_rounded : Icons.lock_outline_rounded,
-              color: _isLockEnabled ? AppColors.primary : AppColors.onSurfaceVariant,
+              color: _isLockEnabled
+                  ? AppColors.primary
+                  : AppColors.onSurfaceVariant,
             ),
             tooltip: 'Seguridad y Privacidad 🛡️',
             onPressed: () => _showPrivacySettingsSheet(context),
@@ -179,77 +203,88 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
       body: _checkingLock
           ? const Center(child: CircularProgressIndicator())
           : (_isLockEnabled && !_isAuthenticated)
-              ? _buildLockScreen()
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20.0),
+          ? _buildLockScreen()
+          : Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final pagePadding = screenWidth < 380 ? 14.0 : 20.0;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.all(pagePadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
                         child: UploadDropzone(
                           isLoading: importState.status == ImportStatus.loading,
-                onTap: () {
-                  ref.read(chatImportProvider.notifier).pickAndImportChatFile();
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'CHATS IMPORTADOS',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.onSurfaceVariant,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 16),
-            switch (chatsAsync) {
-              AsyncData(:final value) when value.isEmpty => Container(
-                padding: const EdgeInsets.all(32),
-                alignment: Alignment.center,
-                child: Text(
-                  'Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                          onTap: () {
+                            ref
+                                .read(chatImportProvider.notifier)
+                                .pickAndImportChatFile();
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        'CHATS IMPORTADOS',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      switch (chatsAsync) {
+                        AsyncData(:final value) when value.isEmpty => Container(
+                          padding: const EdgeInsets.all(32),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.onSurfaceVariant),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        AsyncData(:final value) => ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: value.length,
+                          itemBuilder: (context, index) {
+                            final chat = value[index];
+                            return ChatCard(
+                              chat: chat,
+                              onTap: () {
+                                if (chat.id != null) {
+                                  _openChatDashboard(chat.id!);
+                                }
+                              },
+                              onDelete: () async {
+                                if (chat.id != null) {
+                                  await ref
+                                      .read(chatListProvider.notifier)
+                                      .deleteChat(chat.id!);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                        AsyncError(:final error) => Text(
+                          'Error al cargar chats: $error',
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                        _ => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      },
+                    ],
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              AsyncData(:final value) => ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: value.length,
-                itemBuilder: (context, index) {
-                  final chat = value[index];
-                  return ChatCard(
-                    chat: chat,
-                    onTap: () {
-                      context.push('/dashboard/${chat.id}');
-                    },
-                    onDelete: () async {
-                      if (chat.id != null) {
-                        await ref
-                            .read(chatListProvider.notifier)
-                            .deleteChat(chat.id!);
-                      }
-                    },
-                  );
-                },
-              ),
-              AsyncError(:final error) => Text(
-                'Error al cargar chats: $error',
-                style: const TextStyle(color: AppColors.error),
-              ),
-              _ => const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              ),
-            },
-          ],
-        ),
-      ),
+                );
+              },
+            ),
       bottomNavigationBar: const AdBannerWidget(),
     );
   }
@@ -277,18 +312,15 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             Text(
               'Bloqueo de Seguridad Activado',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             const Text(
               'Confirma tu identidad para acceder a tus chats y estadísticas.',
-              style: TextStyle(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -296,8 +328,10 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: const Color(0xFF003915),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -345,14 +379,14 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(Icons.shield_outlined,
-                            color: AppColors.primary),
+                        const Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(width: 10),
                         Text(
                           'Seguridad y Privacidad',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
+                          style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
