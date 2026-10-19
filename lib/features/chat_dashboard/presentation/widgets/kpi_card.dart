@@ -19,8 +19,12 @@ class KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+    final padding = isCompact ? 12.0 : 16.0;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
@@ -46,24 +50,25 @@ class KpiCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppColors.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
+                    letterSpacing: isCompact ? 0.4 : 0.8,
+                    fontSize: isCompact ? 10 : 11,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(isCompact ? 6 : 8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 18, color: color),
+                child: Icon(icon, size: isCompact ? 16 : 18, color: color),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isCompact ? 4 : 8),
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
@@ -73,7 +78,7 @@ class KpiCard extends StatelessWidget {
                 child: Text(
                   value,
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontSize: 26,
+                    fontSize: isCompact ? 22 : 26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.onSurface,
                   ),
@@ -87,7 +92,7 @@ class KpiCard extends StatelessWidget {
               subtitle!,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: AppColors.onSurfaceVariant,
-                fontSize: 11,
+                fontSize: isCompact ? 10 : 11,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -205,8 +205,11 @@ class ChatDashboardPage extends ConsumerWidget {
           }
           final pace = (totalMsgs / totalDays).toStringAsFixed(1);
 
+          final screenWidth = MediaQuery.sizeOf(context).width;
+          final pagePadding = screenWidth < 380 ? 14.0 : 20.0;
+
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
+            padding: EdgeInsets.all(pagePadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -217,14 +220,25 @@ class ChatDashboardPage extends ConsumerWidget {
                 // KPI Grid (8 Cards)
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+                    final width = constraints.maxWidth;
+                    final crossAxisCount = width > 600 ? 4 : 2;
+                    final double childAspectRatio;
+                    if (width > 600) {
+                      childAspectRatio = 1.45;
+                    } else if (width < 340) {
+                      childAspectRatio = 1.15;
+                    } else if (width < 380) {
+                      childAspectRatio = 1.25;
+                    } else {
+                      childAspectRatio = 1.35;
+                    }
                     return GridView.count(
                       crossAxisCount: crossAxisCount,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.35,
+                      crossAxisSpacing: width < 360 ? 8 : 12,
+                      mainAxisSpacing: width < 360 ? 8 : 12,
+                      childAspectRatio: childAspectRatio,
                       children: [
                         KpiCard(
                           title: 'Mensajes',

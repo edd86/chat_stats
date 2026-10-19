@@ -85,14 +85,17 @@ class _KpiSummary extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 3 : 3;
-        final aspectRatio = constraints.maxWidth > 600 ? 1.8 : 1.25;
+        final width = constraints.maxWidth;
+        final crossAxisCount = width > 600 ? 3 : 3;
+        final aspectRatio = width > 600
+            ? 1.8
+            : (width < 350 ? 1.05 : 1.25);
         return GridView.count(
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: width < 350 ? 6 : 10,
+          mainAxisSpacing: width < 350 ? 6 : 10,
           childAspectRatio: aspectRatio,
           children: [
             _MiniKpi(
@@ -135,8 +138,14 @@ class _MiniKpi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 6 : 10,
+        vertical: isCompact ? 6 : 8,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainer,
         borderRadius: BorderRadius.circular(12),
@@ -146,8 +155,8 @@ class _MiniKpi extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(height: 4),
+          Icon(icon, color: color, size: isCompact ? 14 : 16),
+          const SizedBox(height: 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -156,20 +165,25 @@ class _MiniKpi extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.onSurface,
+                fontSize: isCompact ? 13 : 14,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 9,
+          const SizedBox(height: 1),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontSize: isCompact ? 8.5 : 9,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
