@@ -12,11 +12,11 @@ abstract class AdConstants {
   static const String _androidTestInterstitialId = 'ca-app-pub-3940256099942544/1033173712';
   static const String _iosTestInterstitialId = 'ca-app-pub-3940256099942544/4411468910';
 
-  // --- PRODUCTION AD UNIT IDs (Replace when approved) ---
-  static const String _androidProdBannerId = _androidTestBannerId;
+  // --- PRODUCTION AD UNIT IDs ---
+  static const String _androidProdBannerId = 'ca-app-pub-4272247536731763/2368164456';
   static const String _iosProdBannerId = _iosTestBannerId;
 
-  static const String _androidProdInterstitialId = _androidTestInterstitialId;
+  static const String _androidProdInterstitialId = 'ca-app-pub-4272247536731763/4749776056';
   static const String _iosProdInterstitialId = _iosTestInterstitialId;
 
   /// Returns the appropriate Banner Ad Unit ID based on platform.

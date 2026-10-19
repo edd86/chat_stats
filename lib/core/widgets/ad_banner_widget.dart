@@ -87,17 +87,20 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      height: _bannerAd!.size.height.toDouble(),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        border: Border(
-          top: BorderSide(color: AppColors.outlineVariant, width: 0.5),
+    return SafeArea(
+      top: false,
+      child: Container(
+        width: double.infinity,
+        height: _bannerAd!.size.height.toDouble(),
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          border: Border(
+            top: BorderSide(color: AppColors.outlineVariant, width: 0.5),
+          ),
         ),
+        alignment: Alignment.center,
+        child: AdWidget(ad: _bannerAd!),
       ),
-      alignment: Alignment.center,
-      child: AdWidget(ad: _bannerAd!),
     );
   }
 }
