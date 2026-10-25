@@ -20,7 +20,11 @@ void main() async {
   };
 
   try {
-    await initializeDateFormatting('es', null);
+    await Future.wait([
+      initializeDateFormatting('es', null),
+      initializeDateFormatting('en', null),
+      initializeDateFormatting('pt', null),
+    ]);
   } catch (e) {
     debugPrint('Error intl initializeDateFormatting: $e');
   }
