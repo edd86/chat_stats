@@ -7,7 +7,7 @@
 ## 1. Visión General del Producto
 
 - **Nombre de la App:** Chats Stats (`dev.codedd.chat_stats`)
-- **Versión:** `2.3.1+8` (definida en [pubspec.yaml](file:///d:/FlutterProjects/chat_stats/pubspec.yaml))
+- **Versión:** `2.4.0+9` (definida en [pubspec.yaml](file:///d:/FlutterProjects/chat_stats/pubspec.yaml))
 - **Objetivo:** Importar chats exportados de WhatsApp (`.txt` o `.zip`), procesarlos y generar dashboards visuales, métricas avanzadas, roles sociales, comparativas cara a cara y un "Chat Wrapped" interactivo con historias compartibles.
 - **Principio Fundamental (100% Offline / Local-First):**
   - **No existe backend ni servidores propios.**
