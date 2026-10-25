@@ -366,9 +366,10 @@ class _LongestThreadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeTag = Localizations.localeOf(context).languageCode;
     DateFormat dateFormat;
     try {
-      dateFormat = DateFormat('dd MMM yyyy', 'es');
+      dateFormat = DateFormat('dd MMM yyyy', localeTag);
     } catch (_) {
       dateFormat = DateFormat('dd MMM yyyy');
     }

@@ -1,17 +1,20 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 
 class ActivityHeatmap extends StatelessWidget {
   final List<Map<String, dynamic>> heatmapData;
 
   const ActivityHeatmap({super.key, required this.heatmapData});
 
-  static const _dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-
   @override
   Widget build(BuildContext context) {
     if (heatmapData.isEmpty) return const SizedBox();
 
+    final l10n = AppLocalizations.of(context);
+    final localeTag = Localizations.localeOf(context).languageCode;
+    final dayLabels = AppDateFormatter.getHeatmapDayLabels(localeTag);
     final grid = _buildGrid();
     final maxCount = _getMaxCount(grid);
 
@@ -29,7 +32,7 @@ class ActivityHeatmap extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'MAPA DE ACTIVIDAD (DÍA × HORA)',
+                l10n?.activityHeatmap ?? 'MAPA DE ACTIVIDAD (DÍA × HORA)',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
@@ -40,7 +43,7 @@ class ActivityHeatmap extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _HeatmapGrid(grid: grid, maxCount: maxCount),
+          _HeatmapGrid(grid: grid, maxCount: maxCount, dayLabels: dayLabels),
           const SizedBox(height: 8),
           _HeatmapLegend(maxCount: maxCount),
         ],
@@ -75,8 +78,13 @@ class ActivityHeatmap extends StatelessWidget {
 class _HeatmapGrid extends StatelessWidget {
   final List<List<int>> grid;
   final int maxCount;
+  final List<String> dayLabels;
 
-  const _HeatmapGrid({required this.grid, required this.maxCount});
+  const _HeatmapGrid({
+    required this.grid,
+    required this.maxCount,
+    required this.dayLabels,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +123,7 @@ class _HeatmapGrid extends StatelessWidget {
             const SizedBox(height: 4),
             // Grid rows
             ...List.generate(7, (day) {
+              final label = day < dayLabels.length ? dayLabels[day] : '';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
@@ -122,7 +131,7 @@ class _HeatmapGrid extends StatelessWidget {
                     SizedBox(
                       width: leftLabelWidth,
                       child: Text(
-                        ActivityHeatmap._dayLabels[day],
+                        label,
                         style: const TextStyle(
                           color: AppColors.onSurfaceVariant,
                           fontSize: 10,

@@ -1,7 +1,9 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import '../providers/chat_dashboard_provider.dart';
 import '../widgets/activity_chart.dart';
@@ -22,8 +24,9 @@ class ChatDashboardPage extends ConsumerWidget {
 
   const ChatDashboardPage({super.key, required this.chatId});
 
-  String _formatChatSpan(int? firstMs, int? lastMs) {
+  String _formatChatSpan(int? firstMs, int? lastMs, BuildContext context) {
     if (firstMs == null || lastMs == null) return 'N/A';
+    final l10n = AppLocalizations.of(context);
     final diff = DateTime.fromMillisecondsSinceEpoch(
       lastMs,
     ).difference(DateTime.fromMillisecondsSinceEpoch(firstMs));
@@ -31,18 +34,19 @@ class ChatDashboardPage extends ConsumerWidget {
     if (days >= 365) {
       final years = (days / 365).floor();
       final remMonths = ((days % 365) / 30).floor();
-      return remMonths > 0 ? '${years}a ${remMonths}m' : '$years años';
+      return remMonths > 0 ? '${years}a ${remMonths}m' : '$years a';
     } else if (days >= 30) {
       final months = (days / 30).floor();
       final remDays = days % 30;
-      return remDays > 0 ? '${months}m ${remDays}d' : '$months meses';
+      return remDays > 0 ? '${months}m ${remDays}d' : '$months m';
     } else {
-      return '$days días';
+      return l10n?.daysCount(days) ?? '$days días';
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final chatAsync = ref.watch(chatDetailProvider(chatId));
     final participantsAsync = ref.watch(chatParticipantsProvider(chatId));
     final dailyAsync = ref.watch(chatDailyActivityProvider(chatId));
@@ -63,7 +67,7 @@ class ChatDashboardPage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                chat?.name ?? 'Detalles del Chat',
+                chat?.name ?? (l10n?.chatDetails ?? 'Detalles del Chat'),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -72,7 +76,8 @@ class ChatDashboardPage extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                'Datos locales: ${chat?.fileName ?? ''}',
+                l10n?.localData(chat?.fileName ?? '') ??
+                    'Datos locales: ${chat?.fileName ?? ''}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 11,
@@ -80,8 +85,8 @@ class ChatDashboardPage extends ConsumerWidget {
               ),
             ],
           ),
-          loading: () => const Text('Cargando...'),
-          error: (_, _) => const Text('Error'),
+          loading: () => Text(l10n?.loading ?? 'Cargando...'),
+          error: (_, _) => Text(l10n?.error ?? 'Error'),
         ),
         actions: [
           // Versus Button (Cara a Cara)
@@ -90,7 +95,7 @@ class ChatDashboardPage extends ConsumerWidget {
               Icons.compare_arrows_rounded,
               color: AppColors.secondary,
             ),
-            tooltip: 'Duelo: Cara a Cara ⚔️',
+            tooltip: l10n?.versusDuel ?? 'Duelo: Cara a Cara ⚔️',
             onPressed: () {
               context.push('/versus/$chatId');
             },
@@ -159,7 +164,7 @@ class ChatDashboardPage extends ConsumerWidget {
             onPressed: () {
               context.push('/search/$chatId');
             },
-            tooltip: 'Buscar en Local',
+            tooltip: l10n?.searchInChat ?? 'Buscar en Local',
           ),
           const SizedBox(width: 8),
         ],
@@ -167,7 +172,11 @@ class ChatDashboardPage extends ConsumerWidget {
       body: chatAsync.when(
         data: (chat) {
           if (chat == null) {
-            return const Center(child: Text('Chat no encontrado localmente.'));
+            return Center(
+              child: Text(
+                l10n?.chatNotFound ?? 'Chat no encontrado localmente.',
+              ),
+            );
           }
 
           final dateFilter = ref.watch(dashboardDateFilterProvider);
@@ -241,53 +250,62 @@ class ChatDashboardPage extends ConsumerWidget {
                       childAspectRatio: childAspectRatio,
                       children: [
                         KpiCard(
-                          title: 'Mensajes',
+                          title: l10n?.kpiMessages ?? 'Mensajes',
                           value: '$totalMsgs',
                           icon: Icons.message_outlined,
                           color: AppColors.primary,
-                          subtitle: isFiltered ? 'En período' : 'Total intercambiados',
+                          subtitle: isFiltered
+                              ? (l10n?.kpiInPeriod ?? 'En período')
+                              : (l10n?.kpiTotalExchanged ??
+                                  'Total intercambiados'),
                         ),
                         KpiCard(
-                          title: 'Usuarios',
+                          title: l10n?.kpiParticipants ?? 'Usuarios',
                           value: '$partCount',
                           icon: Icons.people_outline,
                           color: AppColors.secondary,
-                          subtitle: isFiltered ? 'Activos en período' : 'Participantes',
+                          subtitle: isFiltered
+                              ? (l10n?.kpiInPeriod ?? 'Activos en período')
+                              : (l10n?.kpiActiveMembers ?? 'Participantes'),
                         ),
                         KpiCard(
-                          title: 'Antigüedad',
-                          value: _formatChatSpan(firstTime, lastTime),
+                          title: l10n?.kpiChatDuration ?? 'Antigüedad',
+                          value: _formatChatSpan(firstTime, lastTime, context),
                           icon: Icons.date_range_outlined,
                           color: AppColors.tertiary,
-                          subtitle: isFiltered ? 'Rango filtrado' : 'Duración total',
+                          subtitle: isFiltered
+                              ? (l10n?.kpiInPeriod ?? 'Rango filtrado')
+                              : (l10n?.kpiHistorySpan ?? 'Duración total'),
                         ),
                         KpiCard(
-                          title: 'Ritmo Diario',
+                          title: l10n?.kpiDailyAverage ?? 'Ritmo Diario',
                           value: pace,
                           icon: Icons.speed_outlined,
                           color: AppColors.primary,
-                          subtitle: 'msgs / día',
+                          subtitle: l10n?.kpiMsgsPerDay ?? 'msgs / día',
                         ),
                         KpiCard(
-                          title: 'Multimedia',
+                          title: l10n?.kpiMedia ?? 'Multimedia',
                           value: '$totalMed',
                           icon: Icons.perm_media_outlined,
                           color: AppColors.tertiary,
-                          subtitle: 'Archivos adjuntos',
+                          subtitle:
+                              l10n?.kpiAudiosPhotos ?? 'Archivos adjuntos',
                         ),
                         KpiCard(
-                          title: 'Palabras',
+                          title: l10n?.kpiWords ?? 'Palabras',
                           value: '$totalWrd',
                           icon: Icons.article_outlined,
                           color: AppColors.secondary,
-                          subtitle: 'Total texto',
+                          subtitle: l10n?.kpiWrittenContent ?? 'Total texto',
                         ),
                         KpiCard(
-                          title: 'Enlaces Web',
+                          title: l10n?.kpiTotalLinks ?? 'Enlaces Web',
                           value: '${analysis?.totalLinks ?? 0}',
                           icon: Icons.link_rounded,
                           color: AppColors.primary,
-                          subtitle: 'Links compartidos',
+                          subtitle:
+                              l10n?.kpiWebReferences ?? 'Links compartidos',
                         ),
                         KpiCard(
                           title: 'Borrados / Edit.',
@@ -536,6 +554,9 @@ class ChatDashboardPage extends ConsumerWidget {
     WidgetRef ref,
     DashboardDateFilter currentFilter,
   ) {
+    final l10n = AppLocalizations.of(context);
+    final localeTag = Localizations.localeOf(context).languageCode;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -543,7 +564,7 @@ class ChatDashboardPage extends ConsumerWidget {
           _filterChip(
             context,
             ref,
-            label: 'Todo',
+            label: l10n?.filterAllTime ?? 'Todo',
             type: DashboardDateFilterType.all,
             isSelected: currentFilter.type == DashboardDateFilterType.all,
           ),
@@ -551,7 +572,7 @@ class ChatDashboardPage extends ConsumerWidget {
           _filterChip(
             context,
             ref,
-            label: 'Últimos 30d',
+            label: l10n?.filterLast30Days ?? 'Últimos 30d',
             type: DashboardDateFilterType.last30Days,
             isSelected: currentFilter.type == DashboardDateFilterType.last30Days,
           ),
@@ -559,7 +580,7 @@ class ChatDashboardPage extends ConsumerWidget {
           _filterChip(
             context,
             ref,
-            label: 'Últimos 90d',
+            label: '90d',
             type: DashboardDateFilterType.last90Days,
             isSelected: currentFilter.type == DashboardDateFilterType.last90Days,
           ),
@@ -567,7 +588,7 @@ class ChatDashboardPage extends ConsumerWidget {
           _filterChip(
             context,
             ref,
-            label: 'Este año',
+            label: l10n?.filterThisYear ?? 'Este año',
             type: DashboardDateFilterType.thisYear,
             isSelected: currentFilter.type == DashboardDateFilterType.thisYear,
           ),
@@ -636,8 +657,12 @@ class ChatDashboardPage extends ConsumerWidget {
                     currentFilter.type == DashboardDateFilterType.custom &&
                             currentFilter.customStart != null &&
                             currentFilter.customEnd != null
-                        ? '${currentFilter.customStart!.day}/${currentFilter.customStart!.month} - ${currentFilter.customEnd!.day}/${currentFilter.customEnd!.month}'
-                        : 'Personalizado',
+                        ? AppDateFormatter.formatDateRange(
+                            currentFilter.customStart!,
+                            currentFilter.customEnd!,
+                            locale: localeTag,
+                          )
+                        : (l10n?.filterCustom ?? 'Personalizado'),
                     style: TextStyle(
                       color: currentFilter.type == DashboardDateFilterType.custom
                           ? Colors.black

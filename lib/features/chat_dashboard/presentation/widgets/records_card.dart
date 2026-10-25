@@ -1,6 +1,7 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../domain/models/conversation_dynamics.dart';
 
 class RecordsCard extends StatelessWidget {
@@ -15,22 +16,12 @@ class RecordsCard extends StatelessWidget {
     required this.totalMessages,
   });
 
-  String _formatSilence(Duration d) {
-    if (d.inDays >= 1) {
-      final hours = d.inHours % 24;
-      return hours > 0 ? '${d.inDays}d ${hours}h' : '${d.inDays} días';
-    } else if (d.inHours >= 1) {
-      final mins = d.inMinutes % 60;
-      return mins > 0 ? '${d.inHours}h ${mins}m' : '${d.inHours} horas';
-    } else {
-      return '${d.inMinutes} minutos';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final localeTag = Localizations.localeOf(context).languageCode;
     final recordCount = (recordDay?['count'] as int?) ?? 0;
-    final recordDateStr = (recordDay?['date_str'] as String?) ?? 'Sin datos';
+    final recordDateStr = (recordDay?['date_str'] as String?) ?? 'N/A';
     final pctOfTotal = totalMessages > 0
         ? (recordCount / totalMessages * 100).toStringAsFixed(1)
         : '0';
@@ -42,25 +33,34 @@ class RecordsCard extends StatelessWidget {
         final dayRecordWidget = _RecordTile(
           icon: Icons.local_fire_department_rounded,
           iconColor: AppColors.tertiary,
-          title: 'DÍA MÁS ACTIVO DE LA HISTORIA',
-          primaryText: '$recordCount msgs',
+          title: l10n?.mostActiveDayTitle ?? 'DÍA MÁS ACTIVO DE LA HISTORIA',
+          primaryText: l10n?.messagesCount(recordCount) ?? '$recordCount msgs',
           secondaryText: recordDateStr,
-          badgeText: '$pctOfTotal% del total',
+          badgeText: l10n?.pctOfTotal(pctOfTotal) ?? '$pctOfTotal% del total',
           gradientColors: [
             AppColors.tertiary.withValues(alpha: 0.12),
             AppColors.surfaceContainer,
           ],
         );
 
+        final String silenceDurationFormatted = longestSilence != null
+            ? AppDateFormatter.formatSilence(longestSilence!.duration, context)
+            : '';
+
+        final String silenceDatesFormatted = longestSilence != null
+            ? '${AppDateFormatter.formatDateMedium(longestSilence!.start, locale: localeTag)} → ${AppDateFormatter.formatDateMedium(longestSilence!.end, locale: localeTag)}'
+            : '';
+
         final silenceWidget = longestSilence != null
             ? _RecordTile(
                 icon: Icons.hourglass_top_rounded,
                 iconColor: AppColors.secondary,
-                title: 'EL SILENCIO MÁS LARGO',
-                primaryText: _formatSilence(longestSilence!.duration),
-                secondaryText:
-                    '${DateFormat('d MMM yyyy').format(longestSilence!.start)} → ${DateFormat('d MMM yyyy').format(longestSilence!.end)}',
-                badgeText:
+                title: l10n?.longestSilenceTitle ?? 'EL SILENCIO MÁS LARGO',
+                primaryText: silenceDurationFormatted,
+                secondaryText: silenceDatesFormatted,
+                badgeText: l10n?.silenceBrokeBy(
+                      longestSilence!.firstSenderAfter,
+                    ) ??
                     'Rompió silencio: ${longestSilence!.firstSenderAfter}',
                 gradientColors: [
                   AppColors.secondary.withValues(alpha: 0.12),
@@ -70,9 +70,10 @@ class RecordsCard extends StatelessWidget {
             : _RecordTile(
                 icon: Icons.hourglass_empty_rounded,
                 iconColor: AppColors.secondary,
-                title: 'EL SILENCIO MÁS LARGO',
-                primaryText: 'Sin pausas',
-                secondaryText: 'Conversación ininterrumpida',
+                title: l10n?.longestSilenceTitle ?? 'EL SILENCIO MÁS LARGO',
+                primaryText: '-',
+                secondaryText:
+                    l10n?.uninterruptedChat ?? 'Conversación ininterrumpida',
                 badgeText: null,
                 gradientColors: [
                   AppColors.secondary.withValues(alpha: 0.08),

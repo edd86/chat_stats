@@ -1,3 +1,4 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +24,10 @@ class _HourlyChartState extends State<HourlyChart> {
     if (widget.hourlyData.isEmpty) {
       return const SizedBox();
     }
+
+    final l10n = AppLocalizations.of(context);
+    final localeTag = Localizations.localeOf(context).languageCode;
+    final numberFormat = NumberFormat.decimalPattern(localeTag);
 
     final Map<int, int> hourMap = {for (int i = 0; i < 24; i++) i: 0};
     for (final row in widget.hourlyData) {
@@ -50,41 +55,41 @@ class _HourlyChartState extends State<HourlyChart> {
     }
 
     final slots = [
-      const _TimeSlot(
-        title: 'Madrugada',
+      _TimeSlot(
+        title: l10n?.timeSlotDawn ?? 'Madrugada',
         rangeLabel: '00:00 - 06:00',
         startHour: 0,
         endHour: 5,
         icon: Icons.nightlight_round,
-        color: Color(0xFF818CF8),
-        gradientColors: [Color(0xFF6366F1), Color(0xFF818CF8)],
+        color: const Color(0xFF818CF8),
+        gradientColors: const [Color(0xFF6366F1), Color(0xFF818CF8)],
       ),
-      const _TimeSlot(
-        title: 'Mañana',
+      _TimeSlot(
+        title: l10n?.timeSlotMorning ?? 'Mañana',
         rangeLabel: '06:00 - 12:00',
         startHour: 6,
         endHour: 11,
         icon: Icons.wb_twilight_rounded,
         color: AppColors.tertiary,
-        gradientColors: [Color(0xFFF59E0B), AppColors.tertiary],
+        gradientColors: const [Color(0xFFF59E0B), AppColors.tertiary],
       ),
-      const _TimeSlot(
-        title: 'Tarde',
+      _TimeSlot(
+        title: l10n?.timeSlotAfternoon ?? 'Tarde',
         rangeLabel: '12:00 - 18:00',
         startHour: 12,
         endHour: 17,
         icon: Icons.wb_sunny_rounded,
         color: AppColors.primary,
-        gradientColors: [Color(0xFF10B981), AppColors.primary],
+        gradientColors: const [Color(0xFF10B981), AppColors.primary],
       ),
-      const _TimeSlot(
-        title: 'Noche',
+      _TimeSlot(
+        title: l10n?.timeSlotNight ?? 'Noche',
         rangeLabel: '18:00 - 24:00',
         startHour: 18,
         endHour: 23,
         icon: Icons.nights_stay_rounded,
         color: AppColors.secondary,
-        gradientColors: [Color(0xFF0284C7), AppColors.secondary],
+        gradientColors: const [Color(0xFF0284C7), AppColors.secondary],
       ),
     ];
 
@@ -105,8 +110,6 @@ class _HourlyChartState extends State<HourlyChart> {
       }
     }
 
-    final numberFormat = NumberFormat.decimalPattern();
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
       decoration: BoxDecoration(
@@ -126,7 +129,7 @@ class _HourlyChartState extends State<HourlyChart> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'DISTRIBUCIÓN POR FRANJAS DEL DÍA',
+                      l10n?.hourlyDistribution ?? 'DISTRIBUCIÓN POR FRANJAS DEL DÍA',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
@@ -144,7 +147,11 @@ class _HourlyChartState extends State<HourlyChart> {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            'Pico: ${peakHour.toString().padLeft(2, '0')}:00h (${numberFormat.format(peakHourCount)} msgs)',
+                            l10n?.peakHourLabel(
+                                  peakHour.toString().padLeft(2, '0'),
+                                  numberFormat.format(peakHourCount),
+                                ) ??
+                                'Pico: ${peakHour.toString().padLeft(2, '0')}:00h (${numberFormat.format(peakHourCount)} msgs)',
                             style: const TextStyle(
                               color: AppColors.tertiary,
                               fontSize: 11,
@@ -173,14 +180,14 @@ class _HourlyChartState extends State<HourlyChart> {
                   children: [
                     _ViewToggleButton(
                       icon: Icons.view_agenda_rounded,
-                      tooltip: 'Por Franjas (Vertical)',
+                      tooltip: l10n?.viewByPeriods ?? 'Por Franjas (Vertical)',
                       isSelected: _viewMode == _HourlyViewMode.slots,
                       onTap: () =>
                           setState(() => _viewMode = _HourlyViewMode.slots),
                     ),
                     _ViewToggleButton(
                       icon: Icons.show_chart_rounded,
-                      tooltip: 'Curva 24 Horas',
+                      tooltip: l10n?.viewBy24Hours ?? 'Curva 24 Horas',
                       isSelected: _viewMode == _HourlyViewMode.curve,
                       onTap: () =>
                           setState(() => _viewMode = _HourlyViewMode.curve),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -45,6 +46,7 @@ class _ChatSearchPageState extends ConsumerState<ChatSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final searchResultsAsync = ref.watch(
       chatSearchProvider((chatId: widget.chatId, query: _query)),
     );
@@ -60,7 +62,7 @@ class _ChatSearchPageState extends ConsumerState<ChatSearchPage> {
           autofocus: widget.initialQuery == null || widget.initialQuery!.isEmpty,
           style: const TextStyle(color: AppColors.onSurface),
           decoration: InputDecoration(
-            hintText: 'Buscar palabras (e.g. Disney, promo)...',
+            hintText: l10n?.searchHint ?? 'Buscar palabras (ej. Disney, promo)...',
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -82,10 +84,11 @@ class _ChatSearchPageState extends ConsumerState<ChatSearchPage> {
         ),
       ),
       body: _query.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
-                'Escribe una palabra para realizar la búsqueda optimizada.',
-                style: TextStyle(color: AppColors.onSurfaceVariant),
+                l10n?.searchPrompt ??
+                    'Escribe una palabra para realizar la búsqueda optimizada.',
+                style: const TextStyle(color: AppColors.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
             )
@@ -94,7 +97,8 @@ class _ChatSearchPageState extends ConsumerState<ChatSearchPage> {
                 if (messages.isEmpty) {
                   return Center(
                     child: Text(
-                      'No se encontraron coincidencias para "$_query"',
+                      l10n?.noMatchesFound(_query) ??
+                          'No se encontraron coincidencias para "$_query"',
                       style: const TextStyle(color: AppColors.onSurfaceVariant),
                     ),
                   );

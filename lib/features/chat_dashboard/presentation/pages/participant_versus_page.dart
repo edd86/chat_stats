@@ -1,3 +1,4 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +39,7 @@ class _ParticipantVersusPageState extends ConsumerState<ParticipantVersusPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final participantsAsync = ref.watch(
       chatParticipantsProvider(widget.chatId),
     );
@@ -51,18 +53,19 @@ class _ParticipantVersusPageState extends ConsumerState<ParticipantVersusPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Duelo: Cara a Cara ⚔️'),
+        title: Text(l10n?.versusDuel ?? 'Duelo: Cara a Cara ⚔️'),
       ),
       body: participantsAsync.when(
         data: (participants) {
           if (participants.length < 2) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(24.0),
                 child: Text(
-                  'Se necesitan al menos 2 participantes en el chat para hacer una comparativa cara a cara.',
+                  l10n?.versusNeedMinParticipants ??
+                      'Se necesitan al menos 2 participantes en el chat para hacer una comparativa cara a cara.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.onSurfaceVariant),
+                  style: const TextStyle(color: AppColors.onSurfaceVariant),
                 ),
               ),
             );
