@@ -1,0 +1,188 @@
+{
+  "@@locale": "es",
+  "appTitle": "Estadísticas de WhatsApp",
+  "@appTitle": {
+    "description": "Título principal de la aplicación"
+  },
+  "chatsImported": "CHATS IMPORTADOS",
+  "noChatsYet": "Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.",
+  "importChatSuccess": "¡Chat importado con éxito!",
+  "chatLoadError": "Error al cargar chats: {error}",
+  "@chatLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "uploadTitle": "Toca aquí para importar un chat",
+  "uploadSubtitle": "Sube un archivo .zip o .txt exportado de WhatsApp",
+  "processingMessages": "Procesando mensajes...",
+  "howToExport": "¿Cómo exportar desde WhatsApp?",
+  "howToExportButton": "¿Cómo exportar un chat?",
+  "exportStep1": "1. Abre el chat o grupo en WhatsApp que deseas analizar.",
+  "exportStep2Android": "2. Toca los tres puntos (⋮) en la esquina superior derecha.",
+  "exportStep2Ios": "2. Toca el nombre del contacto o grupo en la parte superior.",
+  "exportStep3Android": "3. Selecciona \"Más\" ➔ \"Exportar chat\".",
+  "exportStep3Ios": "3. Desplázate hacia abajo y selecciona \"Exportar chat\".",
+  "exportStep4": "4. ¡IMPORTANTE! Elige la opción \"Sin archivos multimedia\".",
+  "exportStep5Android": "5. Comparte directo con \"Chat Stats\" o guarda el archivo .zip/.txt y selecciónalo aquí.",
+  "exportStep5Ios": "5. Comparte directo a esta app o guarda en \"Archivos\" y selecciónalo desde aquí.",
+  "importedOn": "Importado el {date}",
+  "@importedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "deleteChat": "Eliminar de SQLite",
+  "deleteConfirmTitle": "¿Eliminar chat?",
+  "deleteConfirmMessage": "¿Estás seguro de que deseas eliminar este chat de la base de datos?",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "messagesCount": "{count} msgs",
+  "@messagesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "usersCount": "{count} usuarios",
+  "@usersCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mediaCount": "{count} multimedia",
+  "@mediaCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "securityAndPrivacy": "Seguridad y Privacidad",
+  "privacyExplanation": "Tus chats se procesan 100% en tu dispositivo y nunca se envían a ningún servidor externo.",
+  "biometricLockTitle": "Bloqueo con Huella / PIN",
+  "biometricLockSubtitle": "Solicitar autenticación al abrir la app",
+  "securityLockActivated": "Bloqueo de Seguridad Activado",
+  "securityLockPrompt": "Confirma tu identidad para acceder a tus chats y estadísticas.",
+  "unlock": "Desbloquear",
+  "authReason": "Confirma tu identidad para acceder a tus chats y estadísticas.",
+  "language": "Idioma",
+  "languageSubtitle": "Selecciona el idioma de la aplicación",
+  "systemDefaultLanguage": "Predeterminado del sistema",
+  "spanishLanguage": "Español (Latinoamérica)",
+  "englishLanguage": "English",
+  "portugueseLanguage": "Português",
+  "chatDetails": "Detalles del Chat",
+  "localData": "Datos locales: {fileName}",
+  "@localData": {
+    "placeholders": {
+      "fileName": { "type": "String" }
+    }
+  },
+  "loading": "Cargando...",
+  "error": "Error",
+  "chatNotFound": "Chat no encontrado localmente.",
+  "versusDuel": "Duelo: Cara a Cara ⚔️",
+  "searchInChat": "Buscar en Local",
+  "wrapped": "Wrapped",
+  "filterAllTime": "Todo el tiempo",
+  "filterLast30Days": "Últimos 30 días",
+  "filterThisYear": "Este año",
+  "filterCustom": "Personalizado",
+  "kpiMessages": "Mensajes",
+  "kpiInPeriod": "En período",
+  "kpiTotalExchanged": "Total intercambiados",
+  "kpiMedia": "Archivos",
+  "kpiAudiosPhotos": "Audios, fotos, stickers",
+  "kpiWords": "Palabras",
+  "kpiWrittenContent": "Contenido escrito",
+  "kpiParticipants": "Participantes",
+  "kpiActiveMembers": "Miembros activos",
+  "kpiDailyAverage": "Promedio Diario",
+  "kpiDailyPace": "Ritmo de actividad",
+  "kpiMsgsPerDay": "msgs/día",
+  "kpiChatDuration": "Duración del Chat",
+  "kpiHistorySpan": "Historial registrado",
+  "kpiEmojis": "Emojis Usados",
+  "kpiExpressions": "Expresiones y caras",
+  "kpiTotalLinks": "Links Enviados",
+  "kpiWebReferences": "Referencias web",
+  "activityOverTime": "ACTIVIDAD A LO LARGO DEL TIEMPO",
+  "activityHeatmap": "MAPA DE ACTIVIDAD (DÍA × HORA)",
+  "lessActivity": "Menos",
+  "moreActivity": "Más",
+  "hourlyDistribution": "DISTRIBUCIÓN HORARIA",
+  "peakHourLabel": "Pico: {hour}:00h ({count} msgs)",
+  "@peakHourLabel": {
+    "placeholders": {
+      "hour": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "timeSlotDawn": "Madrugada",
+  "timeSlotMorning": "Mañana",
+  "timeSlotAfternoon": "Tarde",
+  "timeSlotNight": "Noche",
+  "slotShareBadge": "{pct}% de los mensajes",
+  "@slotShareBadge": {
+    "placeholders": {
+      "pct": { "type": "String" }
+    }
+  },
+  "viewByPeriods": "Por Períodos",
+  "viewBy24Hours": "24 Horas",
+  "conversationDynamics": "DINÁMICA DE LA CONVERSACIÓN",
+  "longestSilenceTitle": "EL SILENCIO MÁS LARGO",
+  "uninterruptedChat": "Conversación ininterrumpida",
+  "silenceBrokeBy": "Rompió silencio: {name}",
+  "@silenceBrokeBy": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "mostActiveDayTitle": "DÍA MÁS ACTIVO DE LA HISTORIA",
+  "pctOfTotal": "{pct}% del total",
+  "@pctOfTotal": {
+    "placeholders": {
+      "pct": { "type": "String" }
+    }
+  },
+  "daysCount": "{count, plural, =1{1 día} other{{count} días}}",
+  "@daysCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "hoursCount": "{count, plural, =1{1 hora} other{{count} horas}}",
+  "@hoursCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "minutesCount": "{count, plural, =1{1 minuto} other{{count} minutos}}",
+  "@minutesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "secondsCount": "{count, plural, =1{1 segundo} other{{count} segundos}}",
+  "@secondsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "searchHint": "Buscar palabras (ej. Disney, promo)...",
+  "searchPrompt": "Escribe una palabra para realizar la búsqueda optimizada.",
+  "noMatchesFound": "No se encontraron coincidencias para \"{query}\"",
+  "@noMatchesFound": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "versusNeedMinParticipants": "Se necesitan al menos 2 participantes en el chat para hacer una comparativa cara a cara.",
+  "versusSelectParticipant": "Selecciona participante",
+  "versusWinner": "Ganador general: {name}",
+  "@versusWinner": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "versusTie": "¡Empate técnico!"
+}
