@@ -235,5 +235,60 @@ This is a shopping list:
       final buho = analysis.participants.firstWhere((p) => p.name == 'Búho');
       expect(buho.nightMessagesCount, equals(1));
     });
+
+    test('parseChatContent handles English deleted, edited, and media messages', () async {
+      const sampleText = '''
+4/28/24, 10:00 - Messages and calls are end-to-end encrypted.
+4/28/24, 10:01 - John: Here is the picture <image omitted>
+4/28/24, 10:02 - Sarah: Thanks! <This message was edited>
+4/28/24, 10:03 - John: This message was deleted
+4/28/24, 10:04 - Sarah: You deleted this message.
+''';
+
+      final result = await WhatsAppParser.parseChatContent(
+        rawFileName: 'WhatsApp Chat with John.txt',
+        fileContent: sampleText,
+      );
+
+      expect(result.chat.name, equals('John'));
+      expect(result.messages.length, equals(5));
+
+      final mediaMsg = result.messages.firstWhere((m) => m.isMedia);
+      expect(mediaMsg.sender, equals('John'));
+
+      final editedMsg = result.messages.firstWhere((m) => m.isEdited);
+      expect(editedMsg.sender, equals('Sarah'));
+
+      final deletedMsgs = result.messages.where((m) => m.isDeleted).toList();
+      expect(deletedMsgs.length, equals(2));
+    });
+
+    test('parseChatContent handles Portuguese deleted, edited, and media messages', () async {
+      const sampleText = '''
+28/04/2024 10:00 - As mensagens e as chamadas são protegidas com a criptografia de ponta a ponta.
+28/04/2024 10:01 - Carlos: Veja isso <Arquivo de mídia oculto>
+28/04/2024 10:02 - Ana: Muito legal <Mensagem editada>
+28/04/2024 10:03 - Carlos: Esta mensagem foi apagada
+28/04/2024 10:04 - Ana: Você apagou esta mensagem
+''';
+
+      final result = await WhatsAppParser.parseChatContent(
+        rawFileName: 'Conversa do WhatsApp com Carlos.txt',
+        fileContent: sampleText,
+      );
+
+      expect(result.chat.name, equals('Carlos'));
+      expect(result.messages.length, equals(5));
+
+      final mediaMsg = result.messages.firstWhere((m) => m.isMedia);
+      expect(mediaMsg.sender, equals('Carlos'));
+
+      final editedMsg = result.messages.firstWhere((m) => m.isEdited);
+      expect(editedMsg.sender, equals('Ana'));
+
+      final deletedMsgs = result.messages.where((m) => m.isDeleted).toList();
+      expect(deletedMsgs.length, equals(2));
+    });
   });
 }
+

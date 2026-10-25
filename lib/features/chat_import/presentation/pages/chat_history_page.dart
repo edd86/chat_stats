@@ -1,14 +1,17 @@
 import 'dart:async';
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/localization/locale_provider.dart';
 import '../../../../core/services/ad_service.dart';
 import '../../../../core/services/privacy_service.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/ad_banner_widget.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/language_selector_sheet.dart';
 import '../providers/chat_import_provider.dart';
 import '../widgets/chat_card.dart';
 import '../widgets/upload_dropzone.dart';
@@ -150,12 +153,16 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
   Widget build(BuildContext context) {
     final importState = ref.watch(chatImportProvider);
     final chatsAsync = ref.watch(chatListProvider);
+    final l10n = AppLocalizations.of(context);
 
     ref.listen<ChatImportState>(chatImportProvider, (previous, next) {
       if (next.status == ImportStatus.success && next.importedChatId != null) {
         final importedId = next.importedChatId!;
         ref.read(chatListProvider.notifier).refreshChats();
-        AppSnackBar.showSuccess('¡Chat importado con éxito!', context: context);
+        AppSnackBar.showSuccess(
+          l10n?.importChatSuccess ?? '¡Chat importado con éxito!',
+          context: context,
+        );
         ref.read(chatImportProvider.notifier).reset();
 
         // Display interstitial ad before transitioning to dashboard
@@ -175,7 +182,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Estadísticas de WhatsApp',
+                l10n?.appTitle ?? 'Estadísticas de WhatsApp',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -188,13 +195,21 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(
+              Icons.language_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+            tooltip: l10n?.language ?? 'Idioma',
+            onPressed: () => showLanguageSelectorSheet(context, ref),
+          ),
+          IconButton(
             icon: Icon(
               _isLockEnabled ? Icons.lock_rounded : Icons.lock_outline_rounded,
               color: _isLockEnabled
                   ? AppColors.primary
                   : AppColors.onSurfaceVariant,
             ),
-            tooltip: 'Seguridad y Privacidad 🛡️',
+            tooltip: l10n?.securityAndPrivacy ?? 'Seguridad y Privacidad',
             onPressed: () => _showPrivacySettingsSheet(context),
           ),
           const SizedBox(width: 4),
@@ -225,7 +240,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'CHATS IMPORTADOS',
+                        l10n?.chatsImported ?? 'CHATS IMPORTADOS',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontWeight: FontWeight.bold,
@@ -238,7 +253,8 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                           padding: const EdgeInsets.all(32),
                           alignment: Alignment.center,
                           child: Text(
-                            'Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.',
+                            l10n?.noChatsYet ??
+                                'Aún no has guardado ninguna sala de chat.\nImporta un archivo .zip o .txt arriba para comenzar.',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(color: AppColors.onSurfaceVariant),
                             textAlign: TextAlign.center,
@@ -268,7 +284,8 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                           },
                         ),
                         AsyncError(:final error) => Text(
-                          'Error al cargar chats: $error',
+                          l10n?.chatLoadError(error.toString()) ??
+                              'Error al cargar chats: $error',
                           style: const TextStyle(color: AppColors.error),
                         ),
                         _ => const Center(
@@ -290,6 +307,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
   }
 
   Widget _buildLockScreen() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -310,7 +328,7 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Bloqueo de Seguridad Activado',
+              l10n?.securityLockActivated ?? 'Bloqueo de Seguridad Activado',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -318,9 +336,10 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Confirma tu identidad para acceder a tus chats y estadísticas.',
-              style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13),
+            Text(
+              l10n?.securityLockPrompt ??
+                  'Confirma tu identidad para acceder a tus chats y estadísticas.',
+              style: const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -338,9 +357,9 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
               ),
               onPressed: _authenticateUser,
               icon: const Icon(Icons.lock_open_rounded),
-              label: const Text(
-                'Desbloquear',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              label: Text(
+                l10n?.unlock ?? 'Desbloquear',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -350,6 +369,17 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
   }
 
   void _showPrivacySettingsSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final currentLocale = ref.read(localeProvider);
+    final currentLangLabel = kSupportedLanguages
+        .firstWhere(
+          (element) =>
+              (element.locale == null && currentLocale == null) ||
+              (element.locale?.languageCode == currentLocale?.languageCode),
+          orElse: () => kSupportedLanguages.first,
+        )
+        .label;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceContainer,
@@ -380,12 +410,12 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                     Row(
                       children: [
                         const Icon(
-                          Icons.shield_outlined,
+                          Icons.settings_outlined,
                           color: AppColors.primary,
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Seguridad y Privacidad',
+                          l10n?.securityAndPrivacy ?? 'Seguridad y Privacidad',
                           style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
                                 fontSize: 18,
@@ -395,9 +425,10 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Tus chats se procesan 100% en tu dispositivo y nunca se envían a ningún servidor externo.',
-                      style: TextStyle(
+                    Text(
+                      l10n?.privacyExplanation ??
+                          'Tus chats se procesan 100% en tu dispositivo y nunca se envían a ningún servidor externo.',
+                      style: const TextStyle(
                         color: AppColors.onSurfaceVariant,
                         fontSize: 12,
                       ),
@@ -405,13 +436,14 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                     const SizedBox(height: 16),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        'Bloqueo con Huella / PIN',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      title: Text(
+                        l10n?.biometricLockTitle ?? 'Bloqueo con Huella / PIN',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: const Text(
-                        'Solicitar autenticación al abrir la app',
-                        style: TextStyle(fontSize: 12),
+                      subtitle: Text(
+                        l10n?.biometricLockSubtitle ??
+                            'Solicitar autenticación al abrir la app',
+                        style: const TextStyle(fontSize: 12),
                       ),
                       value: _isLockEnabled,
                       activeTrackColor: AppColors.primary,
@@ -419,6 +451,34 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
                         await PrivacyService.instance.setLockEnabled(val);
                         setState(() => _isLockEnabled = val);
                         setModalState(() {});
+                      },
+                    ),
+                    const Divider(color: AppColors.outlineVariant, height: 20),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.language_rounded,
+                        color: AppColors.primary,
+                      ),
+                      title: Text(
+                        l10n?.language ?? 'Idioma',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        currentLangLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showLanguageSelectorSheet(context, ref);
                       },
                     ),
                   ],
@@ -431,3 +491,4 @@ class _ChatHistoryPageState extends ConsumerState<ChatHistoryPage> {
     );
   }
 }
+

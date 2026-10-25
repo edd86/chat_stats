@@ -1,6 +1,7 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../domain/models/chat_model.dart';
 
 class ChatCard extends StatelessWidget {
@@ -17,9 +18,12 @@ class ChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormatted = DateFormat(
-      'dd/MM/yyyy HH:mm',
-    ).format(DateTime.fromMillisecondsSinceEpoch(chat.createdAt));
+    final l10n = AppLocalizations.of(context);
+    final localeTag = Localizations.localeOf(context).languageCode;
+    final dateFormatted = AppDateFormatter.formatDateTime(
+      DateTime.fromMillisecondsSinceEpoch(chat.createdAt),
+      locale: localeTag,
+    );
 
     return Card(
       color: AppColors.surfaceContainer,
@@ -63,7 +67,8 @@ class ChatCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Importado el $dateFormatted',
+                          l10n?.importedOn(dateFormatted) ??
+                              'Importado el $dateFormatted',
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(color: AppColors.onSurfaceVariant),
                         ),
@@ -76,7 +81,7 @@ class ChatCard extends StatelessWidget {
                       color: AppColors.error,
                     ),
                     onPressed: onDelete,
-                    tooltip: 'Eliminar de SQLite',
+                    tooltip: l10n?.deleteChat ?? 'Eliminar de SQLite',
                   ),
                 ],
               ),
@@ -88,17 +93,20 @@ class ChatCard extends StatelessWidget {
                 children: [
                   _MetricBadge(
                     icon: Icons.message_outlined,
-                    label: '${chat.totalMessages} msgs',
+                    label: l10n?.messagesCount(chat.totalMessages) ??
+                        '${chat.totalMessages} msgs',
                     color: AppColors.primary,
                   ),
                   _MetricBadge(
                     icon: Icons.people_outline,
-                    label: '${chat.participantCount} usuarios',
+                    label: l10n?.usersCount(chat.participantCount) ??
+                        '${chat.participantCount} usuarios',
                     color: AppColors.secondary,
                   ),
                   _MetricBadge(
                     icon: Icons.perm_media_outlined,
-                    label: '${chat.totalMedia} multimedia',
+                    label: l10n?.mediaCount(chat.totalMedia) ??
+                        '${chat.totalMedia} multimedia',
                     color: AppColors.tertiary,
                   ),
                 ],

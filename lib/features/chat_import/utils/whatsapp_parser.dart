@@ -44,23 +44,36 @@ class WhatsAppParser {
     final lower = text.toLowerCase();
     return lower.contains('cifrad') ||
         lower.contains('encrypt') ||
+        lower.contains('criptograf') ||
         lower.contains('creaste') ||
         lower.contains('creó') ||
         lower.contains('created') ||
+        lower.contains('criou') ||
+        lower.contains('criaste') ||
         lower.contains('grupo') ||
         lower.contains('group') ||
         lower.contains('añadió') ||
         lower.contains('added') ||
+        lower.contains('adicionou') ||
         lower.contains('cambió') ||
         lower.contains('changed') ||
+        lower.contains('alterou') ||
+        lower.contains('mudou') ||
         lower.contains('eliminó') ||
         lower.contains('deleted') ||
+        lower.contains('apagou') ||
+        lower.contains('excluiu') ||
+        lower.contains('removeu') ||
         lower.contains('salió') ||
         lower.contains('left') ||
+        lower.contains('saiu') ||
         lower.contains('seguridad') ||
         lower.contains('security') ||
+        lower.contains('segurança') ||
+        lower.contains('seguranca') ||
         lower.contains('llamada') ||
-        lower.contains('call');
+        lower.contains('call') ||
+        lower.contains('chamada');
   }
 
   /// Determines whether the parsed chat corresponds to a legitimate WhatsApp chat.
@@ -81,7 +94,7 @@ class WhatsAppParser {
         .trim();
 
     final prefixMatch = RegExp(
-      r'^(?:Chat de WhatsApp con|WhatsApp Chat with|Chat de WhatsApp|WhatsApp Chat)\s+(.+)$',
+      r'^(?:Chat de WhatsApp con|WhatsApp Chat with|Conversa do WhatsApp com|Chat do WhatsApp com|Conversa do WhatsApp|Chat do WhatsApp|Chat de WhatsApp|WhatsApp Chat)\s+(.+)$',
       caseSensitive: false,
     ).firstMatch(cleanName);
     if (prefixMatch != null && prefixMatch.group(1) != null) {
@@ -278,27 +291,64 @@ class WhatsAppParser {
 
   static bool _checkIsMedia(String text) {
     final lower = text.toLowerCase();
-    return lower.contains('<multimedia omitido>') ||
-        lower.contains('<media omitted>') ||
-        lower.contains('<foto omitida>') ||
-        lower.contains('<video omitido>') ||
-        lower.contains('<audio omitido>') ||
-        lower.contains('<documento omitido>');
+    return lower.contains('multimedia omitido') ||
+        lower.contains('foto omitida') ||
+        lower.contains('video omitido') ||
+        lower.contains('vídeo omitido') ||
+        lower.contains('audio omitido') ||
+        lower.contains('áudio omitido') ||
+        lower.contains('documento omitido') ||
+        lower.contains('sticker omitido') ||
+        lower.contains('imagen omitida') ||
+        // English
+        lower.contains('media omitted') ||
+        lower.contains('image omitted') ||
+        lower.contains('video omitted') ||
+        lower.contains('audio omitted') ||
+        lower.contains('document omitted') ||
+        lower.contains('sticker omitted') ||
+        lower.contains('gif omitted') ||
+        lower.contains('contact card omitted') ||
+        // Portuguese
+        lower.contains('arquivo de mídia oculto') ||
+        lower.contains('arquivo de midia oculto') ||
+        lower.contains('mídia omitida') ||
+        lower.contains('midia omitida') ||
+        lower.contains('figurinha omitida');
   }
 
   static bool _checkIsEdited(String text) {
     final lower = text.toLowerCase();
-    return lower.contains('<se editó este mensaje.>') ||
-        lower.contains('<this message was edited>');
+    return lower.contains('se editó este mensaje') ||
+        lower.contains('este mensaje fue editado') ||
+        // English
+        lower.contains('this message was edited') ||
+        // Portuguese
+        lower.contains('esta mensagem foi editada') ||
+        lower.contains('mensagem editada');
   }
 
   static bool _checkIsDeleted(String text) {
     final lower = text.toLowerCase();
-    return lower.contains('se eliminó este mensaje.') ||
-        lower.contains('<este mensaje fue eliminado>') ||
-        lower.contains('<se borró este mensaje>') ||
-        lower.contains('<this message was deleted>') ||
-        lower.contains('eliminaste este mensaje');
+    return lower.contains('se eliminó este mensaje') ||
+        lower.contains('este mensaje fue eliminado') ||
+        lower.contains('se borró este mensaje') ||
+        lower.contains('eliminaste este mensaje') ||
+        lower.contains('borraste este mensaje') ||
+        // English
+        lower.contains('this message was deleted') ||
+        lower.contains('you deleted this message') ||
+        // Portuguese
+        lower.contains('esta mensagem foi apagada') ||
+        lower.contains('mensagem apagada') ||
+        lower.contains('esta mensagem foi excluída') ||
+        lower.contains('esta mensagem foi excluida') ||
+        lower.contains('mensagem excluída') ||
+        lower.contains('mensagem excluida') ||
+        lower.contains('você apagou esta mensagem') ||
+        lower.contains('voce apagou esta mensagem') ||
+        lower.contains('você excluiu esta mensagem') ||
+        lower.contains('voce excluiu esta mensagem');
   }
 
   static int _calculateWordCount(String text) {

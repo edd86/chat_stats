@@ -1,3 +1,4 @@
+import 'package:chat_stats/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
@@ -12,6 +13,7 @@ class UploadDropzone extends StatelessWidget {
   });
 
   void _showExportInstructions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -47,7 +49,7 @@ class UploadDropzone extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '¿Cómo exportar desde WhatsApp?',
+                        l10n?.howToExport ?? '¿Cómo exportar desde WhatsApp?',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontSize: 18,
@@ -80,18 +82,28 @@ class UploadDropzone extends StatelessWidget {
                   child: TabBarView(
                     children: [
                       _buildStepList([
-                        '1. Abre el chat o grupo en WhatsApp que deseas analizar.',
-                        '2. Toca los tres puntos (⋮) en la esquina superior derecha.',
-                        '3. Selecciona "Más" ➔ "Exportar chat".',
-                        '4. ¡IMPORTANTE! Elige la opción "Sin archivos multimedia".',
-                        '5. Comparte directo con "Chat Stats" o guarda el archivo .zip/.txt y selecciónalo aquí.',
+                        l10n?.exportStep1 ??
+                            '1. Abre el chat o grupo en WhatsApp que deseas analizar.',
+                        l10n?.exportStep2Android ??
+                            '2. Toca los tres puntos (⋮) en la esquina superior derecha.',
+                        l10n?.exportStep3Android ??
+                            '3. Selecciona "Más" ➔ "Exportar chat".',
+                        l10n?.exportStep4 ??
+                            '4. ¡IMPORTANTE! Elige la opción "Sin archivos multimedia".',
+                        l10n?.exportStep5Android ??
+                            '5. Comparte directo con "Chat Stats" o guarda el archivo .zip/.txt y selecciónalo aquí.',
                       ]),
                       _buildStepList([
-                        '1. Abre el chat o grupo en WhatsApp que deseas analizar.',
-                        '2. Toca el nombre del contacto o grupo en la parte superior.',
-                        '3. Desplázate hacia abajo y selecciona "Exportar chat".',
-                        '4. ¡IMPORTANTE! Elige la opción "Sin archivos multimedia".',
-                        '5. Comparte directo a esta app o guarda en "Archivos" y selecciónalo desde aquí.',
+                        l10n?.exportStep1 ??
+                            '1. Abre el chat o grupo en WhatsApp que deseas analizar.',
+                        l10n?.exportStep2Ios ??
+                            '2. Toca el nombre del contacto o grupo en la parte superior.',
+                        l10n?.exportStep3Ios ??
+                            '3. Desplázate hacia abajo y selecciona "Exportar chat".',
+                        l10n?.exportStep4 ??
+                            '4. ¡IMPORTANTE! Elige la opción "Sin archivos multimedia".',
+                        l10n?.exportStep5Ios ??
+                            '5. Comparte directo a esta app o guarda en "Archivos" y selecciónalo desde aquí.',
                       ]),
                     ],
                   ),
@@ -157,6 +169,7 @@ class UploadDropzone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 380;
 
@@ -189,7 +202,7 @@ class UploadDropzone extends StatelessWidget {
               const CircularProgressIndicator(color: AppColors.primary),
               const SizedBox(height: 16),
               Text(
-                'Analizando y guardando chat en Local',
+                l10n?.processingMessages ?? 'Procesando mensajes...',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -210,7 +223,7 @@ class UploadDropzone extends StatelessWidget {
               ),
               SizedBox(height: isCompact ? 12 : 16),
               Text(
-                'Seleccionar archivo o exportar desde WhatsApp',
+                l10n?.uploadTitle ?? 'Toca aquí para importar un chat',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: isCompact ? 16 : 18,
                   fontWeight: FontWeight.bold,
@@ -219,7 +232,8 @@ class UploadDropzone extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Selecciona un archivo .zip o .txt, o comparte directamente desde WhatsApp.',
+                l10n?.uploadSubtitle ??
+                    'Sube un archivo .zip o .txt exportado de WhatsApp',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontSize: 13,
@@ -252,7 +266,7 @@ class UploadDropzone extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '¿Cómo exportar desde WhatsApp?',
+                        l10n?.howToExportButton ?? '¿Cómo exportar un chat?',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.primary,
                           fontSize: 12,
