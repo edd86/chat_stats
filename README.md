@@ -152,10 +152,11 @@ lib/
 
 ## 📋 Historial de Versiones
 
-Versión actual: **v2.4.0+9**
+Versión actual: **v2.4.1+10**
 
 | Versión | Build | Fecha | Detalles |
 |---------|-------|-------|----------|
+| **2.4.1** | +10 | 03/11/2026 | 📣 **Corrección de publicidad:** El banner espera la inicialización del SDK de AdMob antes de solicitar el anuncio, reintento con backoff (5/15/30 s) y limpieza de estado tras fallos, evitando pantallas sin banner permanente. |
 | **2.4.0** | +9 | 25/10/2026 | 🌍 **Internacionalización:** Sistema de localización completo con delegados multi-idioma, selector de idioma en la app y soporte de parsing para exports de WhatsApp en varios idiomas (español, inglés y más). UI del importador y del dashboard localizada. |
 | **2.3.1** | +8 | 19/10/2026 | 🐛 **Correcciones y docs:** Detección de mensajes borrados por uno mismo en formato español, documentación del repositorio (`AI_CONTEXT.md`, política de privacidad y README actualizado), splash nativo Android 12, soporte edge-to-edge, clamp de `textScaler` y refinamiento de layouts responsivos. |
 | **2.2.0** | +6 | 05/10/2026 | 📈 **Gráficos mejorados:** Rediseño del gráfico horario a franjas horarias verticales con vista de curva de 24 h, pruebas unitarias de formato de fecha US (`MM/DD`), rachas y mensajes nocturnos. Configuración de unidades de producción de AdMob y precarga de intersticiales. |
