@@ -26,6 +26,7 @@
 - **Archivos `.txt` y `.zip`:** Importa historiales exportados directamente desde WhatsApp (con o sin archivos multimedia).
 - **Integración con el Menú Compartir:** Envía el chat desde WhatsApp o el explorador de archivos directamente a la aplicación mediante los intents del sistema operativo (`SEND` y `VIEW`).
 - **Parsing Inteligente Multiplataforma:** Soporta formatos de fecha y hora tanto de **Android** (`DD/MM/AAAA, HH:MM - ...`) como de **iOS** (`[DD/MM/AAAA, HH:MM:SS] ...`), detección automática de orden de fecha y sanitización de caracteres invisibles bidi de WhatsApp.
+- **Multi-idioma 🌎:** Interfaz disponible en varios idiomas (español e inglés, con selector integrado) y parser capaz de interpretar exports de WhatsApp generados en distintas configuraciones regionales.
 - **Procesamiento en Isolates (`compute`):** La extracción y el análisis sintáctico se realizan en hilos de fondo sin congelar la interfaz de usuario.
 
 ---
@@ -146,6 +147,23 @@ lib/
    ```bash
    flutter run
    ```
+
+---
+
+## 📋 Historial de Versiones
+
+Versión actual: **v2.4.0+9**
+
+| Versión | Build | Fecha | Detalles |
+|---------|-------|-------|----------|
+| **2.4.0** | +9 | 25/10/2026 | 🌍 **Internacionalización:** Sistema de localización completo con delegados multi-idioma, selector de idioma en la app y soporte de parsing para exports de WhatsApp en varios idiomas (español, inglés y más). UI del importador y del dashboard localizada. |
+| **2.3.1** | +8 | 19/10/2026 | 🐛 **Correcciones y docs:** Detección de mensajes borrados por uno mismo en formato español, documentación del repositorio (`AI_CONTEXT.md`, política de privacidad y README actualizado), splash nativo Android 12, soporte edge-to-edge, clamp de `textScaler` y refinamiento de layouts responsivos. |
+| **2.2.0** | +6 | 05/10/2026 | 📈 **Gráficos mejorados:** Rediseño del gráfico horario a franjas horarias verticales con vista de curva de 24 h, pruebas unitarias de formato de fecha US (`MM/DD`), rachas y mensajes nocturnos. Configuración de unidades de producción de AdMob y precarga de intersticiales. |
+| **2.1.0** | +5 | 04/10/2026 | 🔒 **Privacidad y Versus:** Bloqueo biométrico de historial con `local_auth`, hoja de ajustes de privacidad, pantalla de duelo cara a cara (Versus), tarjeta de rachas, exportación y compartir de historias (`share_plus`), detección de orden de fechas `MM/DD` vs `DD/MM` y extracción de `.zip` en isolate. |
+| **2.0.3** | +4 | 10/09/2026 | 🎛️ **Filtros temporales:** Filtros de rango de fechas (30/90 días, año en curso y personalizado), KPIs sensibles al filtro, métricas de rachas y mensajes nocturnos, utilidad global `AppSnackBar` (success/error/info/warning) y consultas de resumen en `DatabaseHelper`. |
+| **2.0.2** | +3 | 08/09/2026 | 🍎 **Soporte iOS:** Soporte de formato `[DD/MM/AAAA, HH:MM:SS]` de iOS, validación de chats, uso integrado de snackbars, manejo de archivos por intent vía method channel nativo y cobertura de pruebas para parser y extractor de `.zip`. |
+| **1.1.0** | — | ~08/2026 | 🏗️ **Primera versión estable:** Parser de WhatsApp Android, dashboard con KPIs y gráficos, roles sociales, Chat Wrapped, soporte de exports `.zip` e intents de compartir, esquema unificado de SQLite (claves foráneas y limpieza de huérfanos), lanzador e íconos, splash y configuración de AdMob. |
+| **0.1.0** | +1 | — | 🌱 **Prototipo inicial:** Primer commit del proyecto con la estructura base feature-first y datos de prueba. |
 
 ---
 
