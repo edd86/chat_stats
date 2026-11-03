@@ -9,12 +9,24 @@ class AdService {
   AdService._internal();
 
   bool _isInitialized = false;
+  Future<void>? _initializationFuture;
   InterstitialAd? _interstitialAd;
   bool _isLoading = false;
 
+  /// Completes once the Google Mobile Ads SDK finished initializing.
+  ///
+  /// Widgets that load ads (e.g. banners) should await this before
+  /// requesting an ad, otherwise the very first request may be fired
+  /// while the SDK is still initializing and get lost.
+  Future<void> get ready {
+    if (_isInitialized) return Future<void>.value();
+    return _initializationFuture ??= _initialize();
+  }
+
   /// Initializes the Google Mobile Ads SDK safely (v9.x API).
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize() => ready;
+
+  Future<void> _initialize() async {
     if (kIsWeb ||
         (defaultTargetPlatform != TargetPlatform.android &&
             defaultTargetPlatform != TargetPlatform.iOS)) {
