@@ -16,6 +16,7 @@ class AdBannerWidget extends StatefulWidget {
 
 class _AdBannerWidgetState extends State<AdBannerWidget> {
   BannerAd? _bannerAd;
+  AdSize? _platformAdSize;
   bool _isAdLoaded = false;
   bool _isAdLoading = false;
 
@@ -49,13 +50,15 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       return;
     }
 
+    final int width = MediaQuery.sizeOf(context).width.truncate();
+    final Orientation orientation = MediaQuery.orientationOf(context);
+    if (width <= 0) return;
+
     _isAdLoading = true;
     try {
       await AdService.instance.ready;
       if (!mounted) return;
 
-      final int width = MediaQuery.sizeOf(context).width.truncate();
-      final Orientation orientation = MediaQuery.orientationOf(context);
       final AdSize size =
           await AdSize.getLargeAnchoredAdaptiveBannerAdSizeWithOrientation(
         orientation,
@@ -68,7 +71,12 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         size: size,
         request: const AdRequest(),
         listener: BannerAdListener(
-          onAdLoaded: (ad) {
+          onAdLoaded: (ad) async {
+            if (!mounted) {
+              ad.dispose();
+              return;
+            }
+            final AdSize? platformSize = await (ad as BannerAd).getPlatformAdSize();
             if (!mounted) {
               ad.dispose();
               return;
@@ -76,6 +84,8 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
             setState(() {
               _isAdLoaded = true;
               _retryAttempt = 0;
+              _platformAdSize = platformSize;
+              _bannerAd = ad;
             });
           },
           onAdFailedToLoad: (ad, error) {
@@ -83,7 +93,6 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
               'BannerAd failed to load (${error.code}): ${error.message}',
             );
             ad.dispose();
-            _bannerAd = null;
             _isAdLoaded = false;
             if (!mounted) return;
             _scheduleRetry();
@@ -91,8 +100,6 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         ),
       );
 
-      _bannerAd?.dispose();
-      _bannerAd = newBanner;
       await newBanner.load();
     } catch (e) {
       debugPrint('Error loading banner ad: $e');
@@ -138,19 +145,56 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       return const SizedBox.shrink();
     }
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        width: double.infinity,
-        height: _bannerAd!.size.height.toDouble(),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLow,
-          border: Border(
-            top: BorderSide(color: AppColors.outlineVariant, width: 0.5),
+    final double adWidth =
+        (_platformAdSize?.width ?? _bannerAd!.size.width).toDouble();
+    final double rawHeight =
+        (_platformAdSize?.height ?? _bannerAd!.size.height).toDouble();
+    final double adHeight =
+        rawHeight > 0 ? rawHeight : _bannerAd!.size.height.toDouble();
+
+    return AdBannerFrame(
+      width: adWidth,
+      height: adHeight,
+      child: AdWidget(ad: _bannerAd!),
+    );
+  }
+}
+
+/// Anchored bottom container that keeps a banner sized to its ad dimensions
+/// plus bottom safe-area inset instead of expanding inside `Scaffold`.
+@visibleForTesting
+class AdBannerFrame extends StatelessWidget {
+  const AdBannerFrame({
+    super.key,
+    required this.width,
+    required this.height,
+    required this.child,
+  });
+
+  final double width;
+  final double height;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: AppColors.outlineVariant, width: 0.5),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1.0,
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: child,
           ),
         ),
-        alignment: Alignment.center,
-        child: AdWidget(ad: _bannerAd!),
       ),
     );
   }
