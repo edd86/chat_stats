@@ -152,10 +152,11 @@ lib/
 
 ## 📋 Historial de Versiones
 
-Versión actual: **v2.4.1+10**
+Versión actual: **v2.4.2+11**
 
 | Versión | Build | Fecha | Detalles |
 |---------|-------|-------|----------|
+| **2.4.2** | +11 | 13/11/2026 | 🐛 **Corrección de anuncios y layout del banner:** Actualización de `google_mobile_ads` a `9.2.0`, fijación del banner en la parte inferior con `AdBannerFrame` (`SafeArea` + `Center(heightFactor: 1.0)`) evitando que cubra la pantalla, ajuste de inicialización en `main.dart` con `AdService.instance.ready`, precarga de intersticiales al importar chats y manejo de ciclo de vida en `AdService` con pruebas de widget. |
 | **2.4.1** | +10 | 03/11/2026 | 📣 **Corrección de publicidad:** El banner espera la inicialización del SDK de AdMob antes de solicitar el anuncio, reintento con backoff (5/15/30 s) y limpieza de estado tras fallos, evitando pantallas sin banner permanente. |
 | **2.4.0** | +9 | 25/10/2026 | 🌍 **Internacionalización:** Sistema de localización completo con delegados multi-idioma, selector de idioma en la app y soporte de parsing para exports de WhatsApp en varios idiomas (español, inglés y más). UI del importador y del dashboard localizada. |
 | **2.3.1** | +8 | 19/10/2026 | 🐛 **Correcciones y docs:** Detección de mensajes borrados por uno mismo en formato español, documentación del repositorio (`AI_CONTEXT.md`, política de privacidad y README actualizado), splash nativo Android 12, soporte edge-to-edge, clamp de `textScaler` y refinamiento de layouts responsivos. |
