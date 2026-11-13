@@ -7,7 +7,7 @@
 ## 1. Visión General del Producto
 
 - **Nombre de la App:** Chats Stats (`dev.codedd.chat_stats`)
-- **Versión:** `2.4.0+9` (definida en [pubspec.yaml](file:///d:/FlutterProjects/chat_stats/pubspec.yaml))
+- **Versión:** `2.4.2+11` (definida en [pubspec.yaml](file:///d:/FlutterProjects/chat_stats/pubspec.yaml))
 - **Objetivo:** Importar chats exportados de WhatsApp (`.txt` o `.zip`), procesarlos y generar dashboards visuales, métricas avanzadas, roles sociales, comparativas cara a cara y un "Chat Wrapped" interactivo con historias compartibles.
 - **Principio Fundamental (100% Offline / Local-First):**
   - **No existe backend ni servidores propios.**
@@ -31,7 +31,7 @@
 | **file_picker** | `^12.0.0-beta.7` | Selector de archivos `.txt` y `.zip` desde el almacenamiento del usuario |
 | **local_auth** | `^3.0.2` | Bloqueo de seguridad con biometría (huella, Face ID, PIN del dispositivo) |
 | **share_plus** | `^13.3.1` | Compartir imágenes PNG generadas del "Chat Wrapped" en redes sociales |
-| **google_mobile_ads** | `^9.1.0` | Monetización con AdMob (Banner e Intersticiales precargados con timeout) |
+| **google_mobile_ads** | `^9.2.0` | Monetización con AdMob (Banner e Intersticiales precargados con cola y ciclo de vida seguro) |
 | **google_fonts** | `^8.2.1` | Tipografías Inter y Space Grotesk |
 | **shared_preferences** | `^2.5.5` | Almacenamiento clave-valor para flags de privacidad/bloqueo |
 
@@ -51,13 +51,13 @@ lib/
 │   ├── router/
 │   │   └── app_router.dart                 # Configuración de rutas GoRouter ('/', '/dashboard/:chatId', etc.)
 │   ├── services/
-│   │   ├── ad_service.dart                 # Manejo no bloqueante de anuncios (precarga e intersticial con timeout)
+│   │   ├── ad_service.dart                 # Manejo no bloqueante de anuncios (precarga, getter ready, cola de visualización segura)
 │   │   └── privacy_service.dart            # Autenticación biométrica con local_auth
 │   ├── theme/
 │   │   ├── app_colors.dart                 # Paleta dark mode (Background #0B141B, Primary WhatsApp #25D366)
 │   │   └── app_theme.dart                  # ThemeData Material 3 dark con GoogleFonts.inter y spaceGrotesk
 │   └── widgets/
-│       ├── ad_banner_widget.dart           # Widget reutilizable para banner AdMob
+│       ├── ad_banner_widget.dart           # Widget reutilizable y AdBannerFrame para banner AdMob fijo en bottom
 │       └── app_snackbar.dart               # Helpers para mostrar SnackBar en contexto global
 └── features/
     ├── chat_import/
@@ -224,10 +224,11 @@ lib/
 1. **[PrivacyService](file:///d:/FlutterProjects/chat_stats/lib/core/services/privacy_service.dart):**
    - Utiliza `local_auth` y `shared_preferences` (`app_privacy_lock_enabled`).
    - Si está activado, en cada apertura de [chat_history_page.dart](file:///d:/FlutterProjects/chat_stats/lib/features/chat_import/presentation/pages/chat_history_page.dart) solicita autenticación biométrica (o PIN/patrón del sistema) antes de mostrar los chats almacenados.
-2. **[AdService](file:///d:/FlutterProjects/chat_stats/lib/core/services/ad_service.dart):**
-   - Inicialización asíncrona no bloqueante en `main.dart` mediante `unawaited(AdService.instance.initialize())`.
-   - Precarga intersticiales en segundo plano.
-   - Al mostrar un intersticial (`showInterstitialAd({onAdDismissed})`), incluye un timeout de seguridad de 3 segundos para que, si el anuncio falla o tarda en cargar, la navegación del usuario **nunca** se congele.
+2. **[AdService](file:///d:/FlutterProjects/chat_stats/lib/core/services/ad_service.dart) & [AdBannerWidget](file:///d:/FlutterProjects/chat_stats/lib/core/widgets/ad_banner_widget.dart):**
+   - Inicialización asíncrona no bloqueante en `main.dart` mediante `unawaited(AdService.instance.ready)`. Los componentes que solicitan anuncios aguardan el getter `ready` para evitar peticiones perdidas durante el arranque.
+   - Precarga automática de intersticiales en segundo plano al inicializar el SDK y al seleccionar/importar archivos en `chatImportProvider`.
+   - Control seguro de ciclo de vida en `showInterstitialAd({onAdDismissed})`: si el anuncio está cargando se encola (`_pendingShowOnLoad`), se aguarda a que la app esté en `AppLifecycleState.resumed` y `endOfFrame`, garantizando la ejecución de `onAdDismissed` sin congelar la navegación.
+   - **Banner fijo sin bloqueo de layout (`AdBannerFrame`):** Renderizado en `Scaffold.bottomNavigationBar` dentro de `AdBannerFrame`, que combina `SafeArea(top: false)` con `Center(heightFactor: 1.0)` y dimensiones obtenidas vía `getPlatformAdSize()` para anclarse en la parte inferior ocupando estrictamente la altura del anuncio y el inset del sistema, previniendo expansiones verticales que oculten el contenido de la pantalla.
 
 ---
 
