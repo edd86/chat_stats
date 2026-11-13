@@ -38,7 +38,7 @@ void main() async {
 
   // Initialize AdService asynchronously without blocking UI startup
   unawaited(
-    AdService.instance.initialize().catchError((e) {
+    AdService.instance.ready.catchError((e) {
       debugPrint('Error initializing AdService: $e');
     }),
   );
