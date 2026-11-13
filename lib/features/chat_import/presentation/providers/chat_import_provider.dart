@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/local/database_helper.dart';
+import '../../../../core/services/ad_service.dart';
 import '../../domain/models/chat_model.dart';
 import '../../utils/whatsapp_parser.dart';
 import '../../utils/zip_extractor.dart';
@@ -53,6 +54,7 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
 
   Future<void> pickAndImportChatFile() async {
     try {
+      AdService.instance.preloadInterstitialAd();
       state = state.copyWith(status: ImportStatus.loading, errorMessage: null);
 
       final result = await FilePicker.pickFiles(
@@ -90,6 +92,7 @@ class ChatImportNotifier extends Notifier<ChatImportState> {
 
   Future<void> importFromPath(String filePath) async {
     try {
+      AdService.instance.preloadInterstitialAd();
       state = state.copyWith(status: ImportStatus.loading, errorMessage: null);
 
       var effectivePath = filePath;
